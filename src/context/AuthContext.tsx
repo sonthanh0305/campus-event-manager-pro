@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole, UserType } from '@/lib/roles';
 import { toast } from '@/components/ui/sonner';
@@ -10,6 +9,7 @@ interface User {
   userType: UserType;
   roles: UserRole[];
   donViId?: string;
+  avatarUrl?: string; // Add the avatarUrl property as optional
 }
 
 interface AuthContextType {
@@ -31,6 +31,7 @@ const MOCK_USERS: Record<string, User> = {
     email: 'admin@example.com',
     userType: 'NHAN_VIEN',
     roles: ['ADMIN_HE_THONG'],
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Admin%20H%E1%BB%87%20Th%E1%BB%91ng&backgroundColor=1e88e5'
   },
   'event@example.com': {
     id: '2',
@@ -39,6 +40,7 @@ const MOCK_USERS: Record<string, User> = {
     userType: 'NHAN_VIEN',
     roles: ['CB_TO_CHUC_SU_KIEN'],
     donViId: '1',
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=C%C3%A1n%20B%E1%BB%99%20T%E1%BB%95%20Ch%E1%BB%A9c&backgroundColor=1e88e5'
   },
   'facility@example.com': {
     id: '3',
@@ -46,6 +48,7 @@ const MOCK_USERS: Record<string, User> = {
     email: 'facility@example.com',
     userType: 'NHAN_VIEN',
     roles: ['QUAN_LY_CSVC'],
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Qu%E1%BA%A3n%20L%C3%BD%20CSVC&backgroundColor=1e88e5'
   },
   'dean@example.com': {
     id: '4',
@@ -54,6 +57,7 @@ const MOCK_USERS: Record<string, User> = {
     userType: 'GIANG_VIEN',
     roles: ['TRUONG_KHOA'],
     donViId: '2',
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Tr%C6%B0%E1%BB%9Fng%20Khoa%20CNTT&backgroundColor=1e88e5'
   },
   'principal@example.com': {
     id: '5',
@@ -61,6 +65,7 @@ const MOCK_USERS: Record<string, User> = {
     email: 'principal@example.com',
     userType: 'GIANG_VIEN',
     roles: ['BGH_DUYET_SK_TRUONG'],
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Ban%20Gi%C3%A1m%20Hi%E1%BB%87u&backgroundColor=1e88e5'
   },
   'club@example.com': {
     id: '6',
@@ -69,6 +74,7 @@ const MOCK_USERS: Record<string, User> = {
     userType: 'SINH_VIEN',
     roles: ['TRUONG_CLB'],
     donViId: '3',
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Tr%C6%B0%E1%BB%9Fng%20CLB%20IT&backgroundColor=1e88e5'
   },
   'student@example.com': {
     id: '7',
@@ -76,6 +82,7 @@ const MOCK_USERS: Record<string, User> = {
     email: 'student@example.com',
     userType: 'SINH_VIEN',
     roles: ['SINH_VIEN'],
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Sinh%20Vi%C3%AAn&backgroundColor=1e88e5'
   },
   'lecturer@example.com': {
     id: '8',
@@ -84,6 +91,7 @@ const MOCK_USERS: Record<string, User> = {
     userType: 'GIANG_VIEN',
     roles: ['GIANG_VIEN'],
     donViId: '2',
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Gi%E1%BA%A3ng%20Vi%C3%AAn&backgroundColor=1e88e5'
   },
 };
 

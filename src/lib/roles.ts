@@ -1,4 +1,3 @@
-
 // Define all available system roles
 export type UserRole = 
   | 'ADMIN_HE_THONG' 
@@ -7,6 +6,7 @@ export type UserRole =
   | 'QUAN_LY_CSVC'
   | 'TRUONG_KHOA'
   | 'TRUONG_CLB'
+  | 'BI_THU_DOAN'
   | 'SINH_VIEN'
   | 'GIANG_VIEN';
 
@@ -21,6 +21,7 @@ export const roleToUserType: Record<UserRole, UserType> = {
   BGH_DUYET_SK_TRUONG: 'GIANG_VIEN',
   TRUONG_KHOA: 'GIANG_VIEN',
   TRUONG_CLB: 'SINH_VIEN',
+  BI_THU_DOAN: 'SINH_VIEN',
   SINH_VIEN: 'SINH_VIEN',
   GIANG_VIEN: 'GIANG_VIEN',
 };
@@ -43,49 +44,56 @@ export const rolePermissions: Record<UserRole, Permission> = {
     canApprove: ['*'],
   },
   CB_TO_CHUC_SU_KIEN: {
-    canView: ['SuKien', 'YeuCauHuySK', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'YeuCauDoiPhong', 'TaiLieuSK', 'SK_MoiThamGia'],
+    canView: ['SuKien', 'YeuCauHuySK', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'YeuCauDoiPhong', 'TaiLieuSK', 'SK_MoiThamGia', 'ThongKeSuKien'],
     canCreate: ['SuKien', 'YeuCauHuySK', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'YeuCauDoiPhong', 'TaiLieuSK', 'SK_MoiThamGia'],
     canEdit: ['SuKien', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'TaiLieuSK', 'SK_MoiThamGia'],
     canDelete: ['SuKien', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'TaiLieuSK'],
     canApprove: [],
   },
   BGH_DUYET_SK_TRUONG: {
-    canView: ['SuKien', 'YeuCauHuySK', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'ChiTietDatPhong'],
+    canView: ['SuKien', 'YeuCauHuySK', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'ChiTietDatPhong', 'ThongKeSuKien'],
     canCreate: [],
     canEdit: ['SuKien.TrangThaiSkID', 'YeuCauHuySK.TrangThaiYcHuySkID'],
     canDelete: [],
     canApprove: ['SuKien', 'YeuCauHuySK'],
   },
   QUAN_LY_CSVC: {
-    canView: ['SuKien', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'ChiTietDatPhong', 'YeuCauDoiPhong', 'Phong', 'LoaiPhong', 'TrangThietBi', 'Phong_ThietBi', 'TrangThaiPhong'],
+    canView: ['SuKien', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'ChiTietDatPhong', 'YeuCauDoiPhong', 'Phong', 'LoaiPhong', 'TrangThietBi', 'Phong_ThietBi', 'TrangThaiPhong', 'ThongKePhong'],
     canCreate: ['ChiTietDatPhong', 'Phong', 'LoaiPhong', 'TrangThietBi', 'Phong_ThietBi'],
     canEdit: ['YeuCauMuonPhong.TrangThaiChungID', 'YcMuonPhongChiTiet.TrangThaiCtID', 'YeuCauDoiPhong.TrangThaiYcDoiPID', 'ChiTietDatPhong', 'Phong', 'LoaiPhong', 'TrangThietBi', 'Phong_ThietBi', 'TrangThaiPhong'],
     canDelete: ['Phong', 'LoaiPhong', 'TrangThietBi', 'Phong_ThietBi'],
     canApprove: ['YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'YeuCauDoiPhong'],
   },
   TRUONG_KHOA: {
-    canView: ['SuKien', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'ChiTietDatPhong', 'YeuCauDoiPhong', 'ThongTinGiangVien', 'ThongTinSinhVien'],
-    canCreate: [],
-    canEdit: [],
+    canView: ['SuKien.DaDuyet', 'YeuCauMuonPhong.DaDuyet', 'YcMuonPhongChiTiet.DaDuyet', 'ChiTietDatPhong', 'YeuCauDoiPhong', 'ThongTinGiangVien', 'ThongTinSinhVien', 'ThongKeKhoa'],
+    canCreate: ['SK_MoiThamGia'],
+    canEdit: ['SK_MoiThamGia'],
     canDelete: [],
     canApprove: [],
   },
   TRUONG_CLB: {
-    canView: ['SuKien', 'YeuCauMuonPhong', 'YcMuonPhongChiTiet', 'ChiTietDatPhong', 'YeuCauDoiPhong', 'ThanhVienCLB'],
-    canCreate: [],
-    canEdit: [],
+    canView: ['SuKien.DaDuyet', 'YeuCauMuonPhong.DaDuyet', 'YcMuonPhongChiTiet.DaDuyet', 'ChiTietDatPhong', 'YeuCauDoiPhong', 'ThanhVienCLB', 'ThongKeCLB'],
+    canCreate: ['SK_MoiThamGia'],
+    canEdit: ['SK_MoiThamGia', 'ThanhVienCLB'],
+    canDelete: [],
+    canApprove: [],
+  },
+  BI_THU_DOAN: {
+    canView: ['SuKien.DaDuyet', 'YeuCauMuonPhong.DaDuyet', 'YcMuonPhongChiTiet.DaDuyet', 'ChiTietDatPhong', 'YeuCauDoiPhong', 'ThanhVienDoan', 'ThongKeDoan'],
+    canCreate: ['SK_MoiThamGia'],
+    canEdit: ['SK_MoiThamGia', 'ThanhVienDoan'],
     canDelete: [],
     canApprove: [],
   },
   SINH_VIEN: {
-    canView: ['SuKien', 'TaiLieuSK'],
+    canView: ['SuKien.DaDuyet', 'TaiLieuSK.CongKhai'],
     canCreate: ['DanhGiaSK'],
     canEdit: ['SK_MoiThamGia'],
     canDelete: [],
     canApprove: [],
   },
   GIANG_VIEN: {
-    canView: ['SuKien', 'TaiLieuSK'],
+    canView: ['SuKien.DaDuyet', 'TaiLieuSK.CongKhai'],
     canCreate: ['DanhGiaSK'],
     canEdit: ['SK_MoiThamGia'],
     canDelete: [],
@@ -96,6 +104,24 @@ export const rolePermissions: Record<UserRole, Permission> = {
 // Authorization helper functions
 export const canView = (role: UserRole, resource: string): boolean => {
   const permissions = rolePermissions[role];
+  
+  // Handle resources with .DaDuyet or .CongKhai qualifiers
+  if (resource.includes('.')) {
+    const [baseResource, qualifier] = resource.split('.');
+    if (permissions.canView.includes('*')) return true;
+    
+    // Check if role can view this qualified resource
+    return permissions.canView.some(perm => {
+      if (perm === '*') return true;
+      if (perm === resource) return true;
+      
+      // Check if there's a permission with the same base resource and qualifier
+      const [permResource, permQualifier] = perm.split('.');
+      return permResource === baseResource && permQualifier === qualifier;
+    });
+  }
+  
+  // Regular resource check
   return permissions.canView.includes('*') || permissions.canView.includes(resource);
 };
 
@@ -139,4 +165,15 @@ export const hasPermission = (
     default:
       return false;
   }
+};
+
+// Check if event can be viewed based on its status and user's role
+export const canViewEvent = (role: UserRole, eventStatus: string, isPublic: boolean): boolean => {
+  // Admin, event organizers and approvers can see all events
+  if(['ADMIN_HE_THONG', 'CB_TO_CHUC_SU_KIEN', 'BGH_DUYET_SK_TRUONG'].includes(role)) {
+    return true;
+  }
+  
+  // Others can only see approved and public events
+  return eventStatus === 'approved' && isPublic;
 };

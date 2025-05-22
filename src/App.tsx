@@ -27,6 +27,7 @@ import EventsApprove from "./pages/Events/EventsApprove";
 import RoomRequests from "./pages/Facilities/RoomRequests";
 import Rooms from "./pages/Facilities/Rooms";
 import RoomChangeRequests from "./pages/Facilities/RoomChangeRequests";
+import Equipment from "./pages/Facilities/Equipment";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
                 <Route path="/facilities/room-requests" element={<RoomRequests />} />
                 <Route path="/facilities/rooms" element={<Rooms />} />
                 <Route path="/facilities/room-change-requests" element={<RoomChangeRequests />} />
+                <Route path="/facilities/equipment" element={<Equipment />} />
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

@@ -29,7 +29,9 @@ import {
   Settings, 
   Home, 
   Building,
-  Briefcase
+  Briefcase,
+  BarChart3,
+  School
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { NotificationBell } from './NotificationBell';
@@ -145,6 +147,59 @@ const navigationItems: NavItem[] = [
     ],
   },
   {
+    title: 'Thống kê',
+    href: '/dashboard',
+    icon: <BarChart3 className="mr-2 h-4 w-4" />,
+    requiresAuth: true,
+    children: [
+      {
+        title: 'Tổng quan',
+        href: '/dashboard',
+        allowedRoles: ['ADMIN_HE_THONG', 'BGH_DUYET_SK_TRUONG', 'CB_TO_CHUC_SU_KIEN'],
+      },
+      {
+        title: 'Thống kê sự kiện',
+        href: '/dashboard/events',
+        requiresPermission: {
+          action: 'view',
+          resource: 'ThongKeSuKien',
+        },
+      },
+      {
+        title: 'Thống kê phòng & thiết bị',
+        href: '/dashboard/facilities',
+        requiresPermission: {
+          action: 'view',
+          resource: 'ThongKePhong',
+        },
+      },
+      {
+        title: 'Thống kê khoa',
+        href: '/dashboard/department',
+        requiresPermission: {
+          action: 'view',
+          resource: 'ThongKeKhoa',
+        },
+      },
+      {
+        title: 'Thống kê CLB',
+        href: '/dashboard/clubs',
+        requiresPermission: {
+          action: 'view',
+          resource: 'ThongKeCLB',
+        },
+      },
+      {
+        title: 'Thống kê đoàn',
+        href: '/dashboard/union',
+        requiresPermission: {
+          action: 'view',
+          resource: 'ThongKeDoan',
+        },
+      },
+    ],
+  },
+  {
     title: 'Người dùng',
     href: '/users',
     icon: <Users className="mr-2 h-4 w-4" />,
@@ -157,9 +212,14 @@ const navigationItems: NavItem[] = [
         allowedRoles: ['ADMIN_HE_THONG'],
       },
       {
-        title: 'Tài khoản',
-        href: '/users/accounts',
-        allowedRoles: ['ADMIN_HE_THONG'],
+        title: 'Sinh viên',
+        href: '/users/students',
+        allowedRoles: ['ADMIN_HE_THONG', 'TRUONG_KHOA', 'BI_THU_DOAN', 'TRUONG_CLB'],
+      },
+      {
+        title: 'Giảng viên',
+        href: '/users/lecturers',
+        allowedRoles: ['ADMIN_HE_THONG', 'TRUONG_KHOA'],
       },
       {
         title: 'Phân quyền',
@@ -185,6 +245,21 @@ const navigationItems: NavItem[] = [
           action: 'view',
           resource: 'DonVi',
         },
+      },
+      {
+        title: 'Khoa',
+        href: '/units/departments',
+        allowedRoles: ['ADMIN_HE_THONG', 'TRUONG_KHOA'],
+      },
+      {
+        title: 'Câu lạc bộ',
+        href: '/units/clubs',
+        allowedRoles: ['ADMIN_HE_THONG', 'TRUONG_CLB'],
+      },
+      {
+        title: 'Đoàn',
+        href: '/units/union',
+        allowedRoles: ['ADMIN_HE_THONG', 'BI_THU_DOAN'],
       },
       {
         title: 'Ngành học',
@@ -244,7 +319,7 @@ const MainNavigation: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-40 w-full border-b bg-red-600 text-white backdrop-blur">
       <div className="container flex h-16 items-center">
         <div className="mr-4 flex">
           <Link to="/" className="flex items-center space-x-2">
@@ -261,8 +336,11 @@ const MainNavigation: React.FC = () => {
                   <NavigationMenuItem key={index}>
                     <Link to={item.href}>
                       <NavigationMenuLink 
-                        className={navigationMenuTriggerStyle()}
-                        active={location.pathname === item.href}
+                        className={cn(
+                          navigationMenuTriggerStyle(),
+                          "text-white hover:bg-red-700 hover:text-white",
+                          location.pathname === item.href ? "bg-red-700 text-white" : ""
+                        )}
                       >
                         {item.icon}
                         <span>{item.title}</span>
@@ -291,13 +369,14 @@ const MainNavigation: React.FC = () => {
               return (
                 <NavigationMenuItem key={index}>
                   <NavigationMenuTrigger className={cn(
-                    location.pathname.startsWith(item.href) ? 'bg-accent text-accent-foreground' : ''
+                    "text-white hover:bg-red-700 hover:text-white",
+                    location.pathname.startsWith(item.href) ? "bg-red-700 text-white" : ""
                   )}>
                     {item.icon}
                     <span>{item.title}</span>
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] bg-white">
                       {filteredChildren.map((child, childIndex) => (
                         <li key={childIndex}>
                           <Link to={child.href} className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
@@ -322,9 +401,9 @@ const MainNavigation: React.FC = () => {
         {/* User menu */}
         <div className="ml-auto flex items-center space-x-2">
           {isAuthenticated ? (
-            <Menubar>
+            <Menubar className="border-red-400">
               <MenubarMenu>
-                <MenubarTrigger className="space-x-2 font-medium">
+                <MenubarTrigger className="space-x-2 font-medium text-white hover:bg-red-700 focus:bg-red-700">
                   <User className="h-4 w-4" />
                   <span className="max-w-[150px] truncate">{user?.name}</span>
                 </MenubarTrigger>
@@ -355,7 +434,7 @@ const MainNavigation: React.FC = () => {
               </MenubarMenu>
             </Menubar>
           ) : (
-            <Link to="/login" className={cn(navigationMenuTriggerStyle(), "bg-primary text-primary-foreground hover:bg-primary/90")}>
+            <Link to="/login" className={cn(navigationMenuTriggerStyle(), "bg-white text-red-600 hover:bg-gray-100")}>
               Đăng nhập
             </Link>
           )}

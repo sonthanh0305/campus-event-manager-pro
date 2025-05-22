@@ -9,7 +9,7 @@ interface User {
   userType: UserType;
   roles: UserRole[];
   donViId?: string;
-  avatarUrl?: string; // Add the avatarUrl property as optional
+  avatarUrl?: string;
 }
 
 interface AuthContextType {
@@ -75,6 +75,15 @@ const MOCK_USERS: Record<string, User> = {
     roles: ['TRUONG_CLB'],
     donViId: '3',
     avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Tr%C6%B0%E1%BB%9Fng%20CLB%20IT&backgroundColor=1e88e5'
+  },
+  'union@example.com': {
+    id: '9',
+    name: 'Bí Thư Đoàn PTIT',
+    email: 'union@example.com',
+    userType: 'SINH_VIEN',
+    roles: ['BI_THU_DOAN'],
+    donViId: '4',
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=B%C3%AD%20Th%C6%B0%20%C4%90o%C3%A0n&backgroundColor=1e88e5'
   },
   'student@example.com': {
     id: '7',

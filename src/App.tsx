@@ -17,6 +17,17 @@ import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
+// Import Event Pages
+import EventsList from "./pages/Events/EventsList";
+import EventsNew from "./pages/Events/EventsNew";
+import EventsCancelRequests from "./pages/Events/EventsCancelRequests";
+import EventsApprove from "./pages/Events/EventsApprove";
+
+// Import Facility Pages
+import RoomRequests from "./pages/Facilities/RoomRequests";
+import Rooms from "./pages/Facilities/Rooms";
+import RoomChangeRequests from "./pages/Facilities/RoomChangeRequests";
+
 const queryClient = new QueryClient();
 
 // Page transition wrapper
@@ -49,6 +60,17 @@ const App = () => (
                 <Route path="/verify-otp" element={<VerifyOTP />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/profile" element={<Profile />} />
+                
+                {/* Events Routes */}
+                <Route path="/events" element={<EventsList />} />
+                <Route path="/events/new" element={<EventsNew />} />
+                <Route path="/events/cancel-requests" element={<EventsCancelRequests />} />
+                <Route path="/events/approve" element={<EventsApprove />} />
+                
+                {/* Facilities Routes */}
+                <Route path="/facilities/room-requests" element={<RoomRequests />} />
+                <Route path="/facilities/rooms" element={<Rooms />} />
+                <Route path="/facilities/room-change-requests" element={<RoomChangeRequests />} />
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

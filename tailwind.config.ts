@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,12 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				ptit: {
+					blue: '#1e88e5', // Màu xanh da trời PTITHCM
+					red: '#d32f2f',  // Màu đỏ truyền thống PTITHCM
+					light: '#f5f5f5',
+					dark: '#212121'
 				}
 			},
 			borderRadius: {

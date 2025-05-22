@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   NavigationMenu, 
   NavigationMenuContent, 
@@ -24,7 +24,6 @@ import { UserRole, hasPermission } from '@/lib/roles';
 import { 
   User, 
   LogOut, 
-  School, 
   Calendar, 
   Users, 
   Settings, 
@@ -32,6 +31,9 @@ import {
   Building,
   Briefcase
 } from 'lucide-react';
+import { ThemeSwitcher } from './ThemeSwitcher';
+import { NotificationBell } from './NotificationBell';
+import { PTITLogo } from '@/assets/logo';
 
 // Interface for navigation items
 interface NavItem {
@@ -208,6 +210,7 @@ const navigationItems: NavItem[] = [
 const MainNavigation: React.FC = () => {
   const { user, isAuthenticated, logout, hasRole } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
   // Filter navigation items based on user permissions
@@ -235,15 +238,17 @@ const MainNavigation: React.FC = () => {
     return true;
   });
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center">
         <div className="mr-4 flex">
           <Link to="/" className="flex items-center space-x-2">
-            <School className="h-6 w-6" />
-            <span className="hidden font-bold sm:inline-block">
-              HỆ THỐNG QUẢN LÝ SỰ KIỆN
-            </span>
+            <PTITLogo size={36} />
           </Link>
         </div>
 
@@ -308,6 +313,12 @@ const MainNavigation: React.FC = () => {
           </NavigationMenuList>
         </NavigationMenu>
 
+        {/* Theme & Notifications */}
+        <div className="flex items-center space-x-1 mr-2">
+          <ThemeSwitcher />
+          {isAuthenticated && <NotificationBell />}
+        </div>
+
         {/* User menu */}
         <div className="ml-auto flex items-center space-x-2">
           {isAuthenticated ? (
@@ -318,10 +329,12 @@ const MainNavigation: React.FC = () => {
                   <span className="max-w-[150px] truncate">{user?.name}</span>
                 </MenubarTrigger>
                 <MenubarContent>
-                  <MenubarItem className="flex items-center">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Hồ sơ cá nhân</span>
-                  </MenubarItem>
+                  <Link to="/profile">
+                    <MenubarItem className="flex items-center cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Hồ sơ cá nhân</span>
+                    </MenubarItem>
+                  </Link>
                   
                   {user?.userType === 'NHAN_VIEN' && (
                     <MenubarItem>Nhân viên</MenubarItem>
@@ -334,7 +347,7 @@ const MainNavigation: React.FC = () => {
                   )}
                   
                   <MenubarSeparator />
-                  <MenubarItem className="flex items-center text-red-500" onClick={logout}>
+                  <MenubarItem className="flex items-center text-red-500 cursor-pointer" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Đăng xuất</span>
                   </MenubarItem>

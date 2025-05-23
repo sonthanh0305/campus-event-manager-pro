@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   User,
-  Users,
+  UsersIcon,
   GraduationCap,
   Briefcase,
   UserPlus,
@@ -302,7 +301,7 @@ export default function Users() {
                           onClick={() => setSelectedUserType(null)}
                           className="flex items-center gap-2"
                         >
-                          <Users className="h-4 w-4" />
+                          <UsersIcon className="h-4 w-4" />
                           <span>Tất cả</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem

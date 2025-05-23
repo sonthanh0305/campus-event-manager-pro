@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import MainNavigation from '@/components/MainNavigation';
@@ -51,7 +50,11 @@ import {
   Calendar,
   Users,
   MapPin,
-  CalendarDays
+  CalendarDays,
+  GraduationHat,
+  Award,
+  Music2,
+  Box
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
@@ -217,11 +220,11 @@ const getEventTypeIcon = (type: string) => {
     case 'seminar':
       return <FileText className="h-5 w-5 text-indigo-500" />;
     case 'competition':
-      return <Trophy className="h-5 w-5 text-yellow-500" />;
+      return <Award className="h-5 w-5 text-yellow-500" />;
     case 'training':
-      return <GraduationCap className="h-5 w-5 text-green-500" />;
+      return <GraduationHat className="h-5 w-5 text-green-500" />;
     case 'culture':
-      return <Music className="h-5 w-5 text-purple-500" />;
+      return <Music2 className="h-5 w-5 text-purple-500" />;
     default:
       return <Calendar className="h-5 w-5 text-gray-500" />;
   }

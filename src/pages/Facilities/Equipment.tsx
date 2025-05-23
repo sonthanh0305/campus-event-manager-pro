@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import MainNavigation from '@/components/MainNavigation';
 import { useAuth } from '@/context/AuthContext';
@@ -45,10 +44,11 @@ import {
   Printer,
   Laptop,
   Tv,
-  Microphone,
+  Mic,
   Speaker,
   Camera,
   PencilRuler,
+  Box
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
@@ -85,7 +85,7 @@ const MOCK_EQUIPMENT = [
     location: 'Kho thiết bị tầng 2',
     status: 'active',
     imageUrl: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc',
-    icon: <Microphone className="h-8 w-8 text-indigo-500" />,
+    icon: <Mic className="h-8 w-8 text-indigo-500" />,
   },
   {
     id: '3',
@@ -550,7 +550,9 @@ const Equipment = () => {
                         size="sm"
                         onClick={() => {
                           setFilterCategory(category.id);
-                          document.querySelector('[value="grid"]')?.click();
+                          document.querySelector('[value="grid"]')?.dispatchEvent(
+                            new Event('click', { bubbles: true })
+                          );
                         }}
                       >
                         Xem thiết bị

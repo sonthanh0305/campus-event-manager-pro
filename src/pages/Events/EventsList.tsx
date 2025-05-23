@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import MainNavigation from '@/components/MainNavigation';
@@ -469,15 +468,12 @@ const EventsList = () => {
                                 </Button>
                                 
                                 {canManageParticipants(event) && (
-                                  <Button 
-                                    className="flex-1"
-                                    variant="default"
-                                    as={Link}
-                                    to={`/events/${event.id}/participants`}
-                                  >
-                                    <UserPlus className="h-4 w-4 mr-1" /> 
-                                    Mời người tham gia
-                                  </Button>
+                                  <Link to={`/events/${event.id}/participants`} className="flex-1">
+                                    <Button className="w-full">
+                                      <UserPlus className="h-4 w-4 mr-1" /> 
+                                      Mời người tham gia
+                                    </Button>
+                                  </Link>
                                 )}
                               </CardFooter>
                             </Card>
@@ -536,15 +532,12 @@ const EventsList = () => {
                                       </Button>
                                       
                                       {canManageParticipants(event) && (
-                                        <Button 
-                                          size="sm"
-                                          variant="default"
-                                          as={Link}
-                                          to={`/events/${event.id}/participants`}
-                                        >
-                                          <UserPlus className="h-4 w-4 mr-1" /> 
-                                          Mời
-                                        </Button>
+                                        <Link to={`/events/${event.id}/participants`}>
+                                          <Button size="sm">
+                                            <UserPlus className="h-4 w-4 mr-1" /> 
+                                            Mời
+                                          </Button>
+                                        </Link>
                                       )}
                                     </div>
                                   </TableCell>
@@ -612,15 +605,12 @@ const EventsList = () => {
                                       </Button>
                                       
                                       {canManageParticipants(event) && (
-                                        <Button 
-                                          size="sm"
-                                          variant="default"
-                                          as={Link}
-                                          to={`/events/${event.id}/participants`}
-                                        >
-                                          <UserPlus className="h-4 w-4 mr-1" /> 
-                                          Mời người tham gia
-                                        </Button>
+                                        <Link to={`/events/${event.id}/participants`}>
+                                          <Button size="sm">
+                                            <UserPlus className="h-4 w-4 mr-1" /> 
+                                            Mời người tham gia
+                                          </Button>
+                                        </Link>
                                       )}
                                     </div>
                                   </TableCell>
@@ -695,15 +685,12 @@ const EventsList = () => {
                                     </Button>
                                     
                                     {canManageParticipants(event) && (
-                                      <Button 
-                                        size="sm"
-                                        variant="default"
-                                        as={Link}
-                                        to={`/events/${event.id}/participants`}
-                                      >
-                                        <UserPlus className="h-4 w-4 mr-1" /> 
-                                        Mời người tham gia
-                                      </Button>
+                                      <Link to={`/events/${event.id}/participants`}>
+                                        <Button size="sm">
+                                          <UserPlus className="h-4 w-4 mr-1" /> 
+                                          Mời người tham gia
+                                        </Button>
+                                      </Link>
                                     )}
                                   </div>
                                 </div>
@@ -786,7 +773,7 @@ const EventsList = () => {
                   
                   {canManageParticipants(selectedEvent) && (
                     <Link to={`/events/${selectedEvent.id}/participants`}>
-                      <Button variant="default">
+                      <Button>
                         <UserPlus className="h-4 w-4 mr-1" /> 
                         Mời người tham gia
                       </Button>

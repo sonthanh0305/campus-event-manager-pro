@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -124,7 +123,8 @@ const MainNavigation = () => {
           <NavigationMenu className="hidden md:flex flex-1 justify-start">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <Link to="/" legacyBehavior passHref>
+                {/* Fix: Remove legacyBehavior and passHref props */}
+                <Link to="/">
                   <NavigationMenuLink
                     className={cn(
                       navigationMenuTriggerStyle(),

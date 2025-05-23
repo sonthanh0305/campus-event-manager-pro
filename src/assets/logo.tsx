@@ -33,3 +33,7 @@ export const PTITLogo: React.FC<LogoProps> = ({ className, size = 32 }) => {
     </div>
   );
 };
+
+// Add export for Logo to fix the import issue in MainNavigation
+export const Logo = PTITLogo;
+

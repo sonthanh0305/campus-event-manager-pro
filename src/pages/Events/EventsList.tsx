@@ -51,7 +51,7 @@ import {
   Users,
   MapPin,
   CalendarDays,
-  GraduationHat,
+  GraduationCap,
   Award,
   Music2,
   Box
@@ -222,7 +222,7 @@ const getEventTypeIcon = (type: string) => {
     case 'competition':
       return <Award className="h-5 w-5 text-yellow-500" />;
     case 'training':
-      return <GraduationHat className="h-5 w-5 text-green-500" />;
+      return <GraduationCap className="h-5 w-5 text-green-500" />;
     case 'culture':
       return <Music2 className="h-5 w-5 text-purple-500" />;
     default:

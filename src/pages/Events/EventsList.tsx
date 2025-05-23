@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import MainNavigation from '@/components/MainNavigation';
 import { useAuth } from '@/context/AuthContext';
+import { useRole } from '@/context/RoleContext';
 import {
   Card,
   CardContent,
@@ -54,11 +56,13 @@ import {
   GraduationCap,
   Award,
   Music2,
-  Box
+  Box,
+  UserPlus
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { canViewEvent } from '@/lib/roles';
+import { UserRole, canViewEvent } from '@/lib/roles';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Mock data for events
 const mockEvents = [
@@ -72,9 +76,11 @@ const mockEvents = [
     status: 'approved',
     isPublic: true,
     hostUnit: 'Khoa Công nghệ Thông tin',
+    hostUnitId: '2',
     participants: 150,
     description: 'Hội nghị chia sẻ các kết quả nghiên cứu mới nhất trong lĩnh vực CNTT và ứng dụng thực tiễn.',
-    imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1170'
+    imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1170',
+    hasRoom: true
   },
   {
     id: '2',
@@ -86,9 +92,11 @@ const mockEvents = [
     status: 'pending',
     isPublic: true,
     hostUnit: 'Phòng Công tác Sinh viên',
+    hostUnitId: '5',
     participants: 80,
     description: 'Chuỗi workshop trang bị kỹ năng giao tiếp, làm việc nhóm và quản lý thời gian hiệu quả.',
-    imageUrl: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=1170'
+    imageUrl: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=1170',
+    hasRoom: false
   },
   {
     id: '3',
@@ -100,9 +108,11 @@ const mockEvents = [
     status: 'approved',
     isPublic: true,
     hostUnit: 'CLB IT',
+    hostUnitId: '3',
     participants: 200,
     description: 'Cuộc thi lập trình với các ứng dụng IoT thực tế, tạo cơ hội cho sinh viên thể hiện khả năng sáng tạo.',
-    imageUrl: 'https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?q=80&w=1170'
+    imageUrl: 'https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?q=80&w=1170',
+    hasRoom: true
   },
   {
     id: '4',
@@ -114,9 +124,11 @@ const mockEvents = [
     status: 'cancelled',
     isPublic: false,
     hostUnit: 'Ban Giám hiệu',
+    hostUnitId: '1',
     participants: 25,
     description: 'Cuộc họp định kỳ của Hội đồng Khoa học để thảo luận về các đề tài nghiên cứu mới.',
-    imageUrl: ''
+    imageUrl: '',
+    hasRoom: true
   },
   {
     id: '5',
@@ -128,9 +140,11 @@ const mockEvents = [
     status: 'completed',
     isPublic: true,
     hostUnit: 'Đoàn Thanh niên',
+    hostUnitId: '4',
     participants: 500,
     description: 'Chương trình văn nghệ chào đón tân sinh viên với nhiều tiết mục đặc sắc từ các CLB văn nghệ.',
-    imageUrl: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1170'
+    imageUrl: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1170',
+    hasRoom: true
   },
   {
     id: '6',
@@ -142,9 +156,11 @@ const mockEvents = [
     status: 'approved',
     isPublic: true,
     hostUnit: 'Khoa CNTT',
+    hostUnitId: '2',
     participants: 120,
     description: 'Hội thảo thảo luận về cách ứng dụng AI trong việc cải thiện phương pháp giảng dạy và học tập.',
-    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=1170'
+    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=1170',
+    hasRoom: true
   },
 ];
 
@@ -232,11 +248,20 @@ const getEventTypeIcon = (type: string) => {
 
 const EventsList = () => {
   const { user } = useAuth();
+  const { hasAccess } = useRole();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
+  
+  // Check if the user is authorized to see events for their unit
+  const userCanManageUnitEvents = user && (
+    user.roles.includes('TRUONG_KHOA') || 
+    user.roles.includes('TRUONG_CLB') || 
+    user.roles.includes('BI_THU_DOAN')
+  );
   
   // Filter events based on search term, filters, and permissions
   const filteredEvents = mockEvents.filter(event => {
@@ -244,9 +269,14 @@ const EventsList = () => {
     if (!user) return event.isPublic && event.status === 'approved';
     
     // Admin role users can see all events
-    const canView = user.roles.some(role => 
+    let canView = user.roles.some(role => 
       canViewEvent(role, event.status, event.isPublic)
     );
+
+    // Additionally, unit leaders can see events related to their units even if not public
+    if (!canView && userCanManageUnitEvents && user.donViId === event.hostUnitId) {
+      canView = true;
+    }
     
     if (!canView) return false;
     
@@ -271,6 +301,17 @@ const EventsList = () => {
     setShowEventDetails(true);
   };
 
+  // Check if user can manage participants for a specific event
+  const canManageParticipants = (event: any) => {
+    if (!user || !event) return false;
+    if (!userCanManageUnitEvents) return false;
+    
+    // User can only manage participants for events related to their unit and that have rooms assigned
+    return user.donViId === event.hostUnitId && 
+           event.hasRoom && 
+           ['approved', 'completed'].includes(event.status);
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <MainNavigation />
@@ -281,26 +322,28 @@ const EventsList = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Quản lý sự kiện</h1>
               <p className="text-muted-foreground">Danh sách các sự kiện và trạng thái xử lý</p>
             </div>
-            {user?.roles.includes('CB_TO_CHUC_SU_KIEN') && (
-              <Link to="/events/new">
-                <Button className="flex gap-2">
-                  <CalendarPlus className="h-4 w-4" />
-                  <span>Tạo sự kiện mới</span>
-                </Button>
-              </Link>
-            )}
+            <div className="flex gap-2">
+              {hasAccess('create', 'SuKien') && (
+                <Link to="/events/new">
+                  <Button className="flex gap-2">
+                    <CalendarPlus className="h-4 w-4" />
+                    <span>Tạo sự kiện mới</span>
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
 
           <Tabs defaultValue="all" className="space-y-4">
-            <div className="flex justify-between">
+            <div className="flex justify-between overflow-x-auto">
               <TabsList>
                 <TabsTrigger value="all">Tất cả</TabsTrigger>
-                <TabsTrigger value="mine">Sự kiện của tôi</TabsTrigger>
+                {userCanManageUnitEvents && <TabsTrigger value="myunit">Đơn vị của tôi</TabsTrigger>}
                 <TabsTrigger value="upcoming">Sắp diễn ra</TabsTrigger>
               </TabsList>
             </div>
@@ -322,9 +365,9 @@ const EventsList = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 flex-col sm:flex-row">
                       <Select value={filterType} onValueChange={setFilterType}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-full sm:w-[180px]">
                           <SelectValue placeholder="Loại sự kiện" />
                         </SelectTrigger>
                         <SelectContent>
@@ -338,7 +381,7 @@ const EventsList = () => {
                         </SelectContent>
                       </Select>
                       <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-full sm:w-[180px]">
                           <SelectValue placeholder="Trạng thái" />
                         </SelectTrigger>
                         <SelectContent>
@@ -353,7 +396,7 @@ const EventsList = () => {
                     </div>
                   </div>
                   
-                  <Tabs defaultValue="cards">
+                  <Tabs defaultValue={isMobile ? "cards" : "table"}>
                     <TabsList className="mb-4">
                       <TabsTrigger value="cards">Hiển thị thẻ</TabsTrigger>
                       <TabsTrigger value="table">Hiển thị bảng</TabsTrigger>
@@ -416,14 +459,26 @@ const EventsList = () => {
                                 </div>
                               </CardContent>
                               
-                              <CardFooter className="p-4 pt-0">
+                              <CardFooter className="p-4 pt-0 flex gap-2">
                                 <Button 
                                   variant="outline"
-                                  className="w-full"
+                                  className="flex-1"
                                   onClick={() => openEventDetails(event)}
                                 >
                                   Chi tiết
                                 </Button>
+                                
+                                {canManageParticipants(event) && (
+                                  <Button 
+                                    className="flex-1"
+                                    variant="default"
+                                    as={Link}
+                                    to={`/events/${event.id}/participants`}
+                                  >
+                                    <UserPlus className="h-4 w-4 mr-1" /> 
+                                    Mời người tham gia
+                                  </Button>
+                                )}
                               </CardFooter>
                             </Card>
                           ))}
@@ -436,7 +491,7 @@ const EventsList = () => {
                     </TabsContent>
                     
                     <TabsContent value="table">
-                      <div className="rounded-md border">
+                      <div className="rounded-md border overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -470,14 +525,28 @@ const EventsList = () => {
                                   <TableCell className="text-center">{event.participants} người</TableCell>
                                   <TableCell className="text-center">{getStatusBadge(event.status)}</TableCell>
                                   <TableCell className="text-right">
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      onClick={() => openEventDetails(event)}
-                                    >
-                                      <FileText className="h-4 w-4 mr-1" />
-                                      Chi tiết
-                                    </Button>
+                                    <div className="flex justify-end gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => openEventDetails(event)}
+                                      >
+                                        <FileText className="h-4 w-4 mr-1" />
+                                        Chi tiết
+                                      </Button>
+                                      
+                                      {canManageParticipants(event) && (
+                                        <Button 
+                                          size="sm"
+                                          variant="default"
+                                          as={Link}
+                                          to={`/events/${event.id}/participants`}
+                                        >
+                                          <UserPlus className="h-4 w-4 mr-1" /> 
+                                          Mời
+                                        </Button>
+                                      )}
+                                    </div>
                                   </TableCell>
                                 </TableRow>
                               ))
@@ -497,19 +566,78 @@ const EventsList = () => {
               </Card>
             </TabsContent>
             
-            <TabsContent value="mine" className="space-y-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle>Sự kiện của tôi</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* Similar content as "all" tab but filtered for current user's events */}
-                  <p className="text-muted-foreground text-center py-6">
-                    Các sự kiện do bạn tạo hoặc được giao quản lý sẽ hiển thị ở đây
-                  </p>
-                </CardContent>
-              </Card>
-            </TabsContent>
+            {userCanManageUnitEvents && (
+              <TabsContent value="myunit" className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle>Sự kiện của đơn vị</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {filteredEvents
+                      .filter(event => event.hostUnitId === user?.donViId)
+                      .length > 0 ? (
+                      <div className="rounded-md border overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Tên sự kiện</TableHead>
+                              <TableHead>Thời gian</TableHead>
+                              <TableHead>Địa điểm</TableHead>
+                              <TableHead className="text-center">Trạng thái</TableHead>
+                              <TableHead className="text-right">Thao tác</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredEvents
+                              .filter(event => event.hostUnitId === user?.donViId)
+                              .map((event) => (
+                                <TableRow key={event.id}>
+                                  <TableCell className="font-medium">{event.title}</TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col">
+                                      <span className="text-sm">{formatDate(event.startDate)}</span>
+                                      <span className="text-sm text-muted-foreground">đến {formatDate(event.endDate)}</span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>{event.location || 'Chưa xác định'}</TableCell>
+                                  <TableCell className="text-center">{getStatusBadge(event.status)}</TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => openEventDetails(event)}
+                                      >
+                                        Chi tiết
+                                      </Button>
+                                      
+                                      {canManageParticipants(event) && (
+                                        <Button 
+                                          size="sm"
+                                          variant="default"
+                                          as={Link}
+                                          to={`/events/${event.id}/participants`}
+                                        >
+                                          <UserPlus className="h-4 w-4 mr-1" /> 
+                                          Mời người tham gia
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 text-muted-foreground">
+                        Không có sự kiện nào thuộc đơn vị của bạn
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
             
             <TabsContent value="upcoming" className="space-y-4">
               <Card>
@@ -517,10 +645,78 @@ const EventsList = () => {
                   <CardTitle>Sự kiện sắp diễn ra</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {/* Similar content as "all" tab but filtered for upcoming events */}
-                  <p className="text-muted-foreground text-center py-6">
-                    Các sự kiện sắp diễn ra trong 7 ngày tới sẽ hiển thị ở đây
-                  </p>
+                  {/* Filter for upcoming events (those in the future) */}
+                  {filteredEvents
+                    .filter(event => new Date(event.startDate) > new Date())
+                    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                    .slice(0, 5)
+                    .length > 0 ? (
+                    <div className="space-y-4">
+                      {filteredEvents
+                        .filter(event => new Date(event.startDate) > new Date())
+                        .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                        .slice(0, 5)
+                        .map((event) => (
+                          <Card key={event.id} className="overflow-hidden">
+                            <div className="flex flex-col md:flex-row">
+                              <div className="md:w-1/4 p-4 flex items-center justify-center bg-muted">
+                                <div className="text-center">
+                                  <div className="text-3xl font-bold">
+                                    {new Date(event.startDate).getDate()}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    Tháng {new Date(event.startDate).getMonth() + 1}
+                                  </div>
+                                  <div className="text-sm mt-2">
+                                    {formatTime(event.startDate)}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="md:w-3/4 p-4">
+                                <div className="flex flex-col h-full justify-between">
+                                  <div>
+                                    <h3 className="text-lg font-medium mb-2">{event.title}</h3>
+                                    <div className="flex items-center text-sm text-muted-foreground mb-1">
+                                      <MapPin className="mr-1 h-4 w-4" />
+                                      <span>{event.location}</span>
+                                    </div>
+                                    <div className="flex items-center text-sm text-muted-foreground">
+                                      <Users className="mr-1 h-4 w-4" />
+                                      <span>{event.hostUnit}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-end gap-2 mt-4">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => openEventDetails(event)}
+                                    >
+                                      Chi tiết
+                                    </Button>
+                                    
+                                    {canManageParticipants(event) && (
+                                      <Button 
+                                        size="sm"
+                                        variant="default"
+                                        as={Link}
+                                        to={`/events/${event.id}/participants`}
+                                      >
+                                        <UserPlus className="h-4 w-4 mr-1" /> 
+                                        Mời người tham gia
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 text-muted-foreground">
+                      Không có sự kiện nào sắp diễn ra
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -579,18 +775,30 @@ const EventsList = () => {
               </div>
             </div>
             
-            {selectedEvent.status === 'approved' && (
-              <div className="flex justify-end gap-2">
-                {user?.roles.some(r => ['CB_TO_CHUC_SU_KIEN'].includes(r)) && (
-                  <Link to={`/facilities/room-requests/new?eventId=${selectedEvent.id}`}>
-                    <Button variant="outline">Yêu cầu mượn phòng</Button>
-                  </Link>
-                )}
-                <Link to={`/events/${selectedEvent.id}`}>
-                  <Button>Xem chi tiết đầy đủ</Button>
-                </Link>
-              </div>
-            )}
+            <div className="flex justify-end gap-2 flex-wrap">
+              {selectedEvent.status === 'approved' && (
+                <>
+                  {hasAccess('create', 'YeuCauMuonPhong') && (
+                    <Link to={`/facilities/room-requests/new?eventId=${selectedEvent.id}`}>
+                      <Button variant="outline">Yêu cầu mượn phòng</Button>
+                    </Link>
+                  )}
+                  
+                  {canManageParticipants(selectedEvent) && (
+                    <Link to={`/events/${selectedEvent.id}/participants`}>
+                      <Button variant="default">
+                        <UserPlus className="h-4 w-4 mr-1" /> 
+                        Mời người tham gia
+                      </Button>
+                    </Link>
+                  )}
+                </>
+              )}
+              
+              <Link to={`/events/${selectedEvent.id}`}>
+                <Button>Xem chi tiết đầy đủ</Button>
+              </Link>
+            </div>
           </DialogContent>
         </Dialog>
       )}

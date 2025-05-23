@@ -23,12 +23,14 @@ import EventsList from "./pages/Events/EventsList";
 import EventsNew from "./pages/Events/EventsNew";
 import EventsCancelRequests from "./pages/Events/EventsCancelRequests";
 import EventsApprove from "./pages/Events/EventsApprove";
+import EventParticipants from "./pages/Events/EventParticipants";
 
 // Import Facility Pages
 import RoomRequests from "./pages/Facilities/RoomRequests";
 import Rooms from "./pages/Facilities/Rooms";
 import RoomChangeRequests from "./pages/Facilities/RoomChangeRequests";
 import Equipment from "./pages/Facilities/Equipment";
+import RoomSchedule from "./pages/Facilities/RoomSchedule";
 
 // Import Dashboard Pages
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -94,10 +96,12 @@ const App = () => (
                   <Route path="/events/new" element={<ProtectedRoute><EventsNew /></ProtectedRoute>} />
                   <Route path="/events/cancel-requests" element={<ProtectedRoute><EventsCancelRequests /></ProtectedRoute>} />
                   <Route path="/events/approve" element={<ProtectedRoute><EventsApprove /></ProtectedRoute>} />
+                  <Route path="/events/:eventId/participants" element={<ProtectedRoute><EventParticipants /></ProtectedRoute>} />
                   
                   {/* Facilities Routes */}
                   <Route path="/facilities/room-requests" element={<ProtectedRoute><RoomRequests /></ProtectedRoute>} />
                   <Route path="/facilities/rooms" element={<ProtectedRoute><Rooms /></ProtectedRoute>} />
+                  <Route path="/facilities/room-schedule" element={<ProtectedRoute><RoomSchedule /></ProtectedRoute>} />
                   <Route path="/facilities/room-change-requests" element={<ProtectedRoute><RoomChangeRequests /></ProtectedRoute>} />
                   <Route path="/facilities/equipment" element={<ProtectedRoute><Equipment /></ProtectedRoute>} />
                   

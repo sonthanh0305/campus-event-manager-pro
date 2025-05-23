@@ -1,441 +1,515 @@
 
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  NavigationMenu, 
-  NavigationMenuContent, 
-  NavigationMenuItem, 
-  NavigationMenuLink, 
-  NavigationMenuList, 
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle
-} from '@/components/ui/navigation-menu';
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
-  Menubar,
-  MenubarContent,
-  MenubarItem,
-  MenubarMenu,
-  MenubarSeparator,
-  MenubarTrigger,
-} from '@/components/ui/menubar';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/context/AuthContext';
-import { UserRole, hasPermission } from '@/lib/roles';
-import { 
-  User, 
-  LogOut, 
-  Calendar, 
-  Users, 
-  Settings, 
-  Home, 
-  Building,
-  Briefcase,
-  BarChart3,
-  School
-} from 'lucide-react';
-import { ThemeSwitcher } from './ThemeSwitcher';
-import { NotificationBell } from './NotificationBell';
-import { PTITLogo } from '@/assets/logo';
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { Logo } from "@/assets/logo";
+import {
+  CalendarDays,
+  ChevronDown,
+  LogOut,
+  Menu,
+  User,
+  Building2,
+  Users,
+  LayoutDashboard,
+  Settings,
+  BookOpen,
+  CalendarCheck,
+  MessageCircle,
+  Megaphone,
+} from "lucide-react";
+import { NotificationBell } from "./NotificationBell";
+import { useMediaQuery } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-// Interface for navigation items
-interface NavItem {
-  title: string;
-  href: string;
-  icon?: React.ReactNode;
-  requiresAuth?: boolean;
-  allowedRoles?: UserRole[];
-  requiresPermission?: {
-    action: 'view' | 'create' | 'edit' | 'delete' | 'approve';
-    resource: string;
-  };
-  children?: NavItem[];
-}
-
-// Define navigation structure based on roles and permissions
-const navigationItems: NavItem[] = [
-  {
-    title: 'Trang chủ',
-    href: '/',
-    icon: <Home className="mr-2 h-4 w-4" />,
-  },
-  {
-    title: 'Sự kiện',
-    href: '/events',
-    icon: <Calendar className="mr-2 h-4 w-4" />,
-    requiresAuth: true,
-    requiresPermission: {
-      action: 'view',
-      resource: 'SuKien',
-    },
-    children: [
-      {
-        title: 'Tất cả sự kiện',
-        href: '/events',
-        requiresPermission: {
-          action: 'view',
-          resource: 'SuKien',
-        },
-      },
-      {
-        title: 'Tạo sự kiện mới',
-        href: '/events/new',
-        requiresPermission: {
-          action: 'create',
-          resource: 'SuKien',
-        },
-      },
-      {
-        title: 'Duyệt sự kiện',
-        href: '/events/approve',
-        requiresPermission: {
-          action: 'approve',
-          resource: 'SuKien',
-        },
-      },
-      {
-        title: 'Yêu cầu hủy sự kiện',
-        href: '/events/cancel-requests',
-        requiresPermission: {
-          action: 'view',
-          resource: 'YeuCauHuySK',
-        },
-      },
-    ],
-  },
-  {
-    title: 'Phòng & Thiết bị',
-    href: '/facilities',
-    icon: <Building className="mr-2 h-4 w-4" />,
-    requiresAuth: true,
-    requiresPermission: {
-      action: 'view',
-      resource: 'Phong',
-    },
-    children: [
-      {
-        title: 'Tất cả phòng',
-        href: '/facilities/rooms',
-        requiresPermission: {
-          action: 'view',
-          resource: 'Phong',
-        },
-      },
-      {
-        title: 'Quản lý thiết bị',
-        href: '/facilities/equipment',
-        requiresPermission: {
-          action: 'view',
-          resource: 'TrangThietBi',
-        },
-      },
-      {
-        title: 'Yêu cầu mượn phòng',
-        href: '/facilities/room-requests',
-        requiresPermission: {
-          action: 'view',
-          resource: 'YeuCauMuonPhong',
-        },
-      },
-      {
-        title: 'Yêu cầu đổi phòng',
-        href: '/facilities/room-change-requests',
-        requiresPermission: {
-          action: 'view',
-          resource: 'YeuCauDoiPhong',
-        },
-      },
-    ],
-  },
-  {
-    title: 'Thống kê',
-    href: '/dashboard',
-    icon: <BarChart3 className="mr-2 h-4 w-4" />,
-    requiresAuth: true,
-    children: [
-      {
-        title: 'Tổng quan',
-        href: '/dashboard',
-        allowedRoles: ['ADMIN_HE_THONG', 'BGH_DUYET_SK_TRUONG', 'CB_TO_CHUC_SU_KIEN'],
-      },
-      {
-        title: 'Thống kê sự kiện',
-        href: '/dashboard/events',
-        requiresPermission: {
-          action: 'view',
-          resource: 'ThongKeSuKien',
-        },
-      },
-      {
-        title: 'Thống kê phòng & thiết bị',
-        href: '/dashboard/facilities',
-        requiresPermission: {
-          action: 'view',
-          resource: 'ThongKePhong',
-        },
-      },
-      {
-        title: 'Thống kê khoa',
-        href: '/dashboard/department',
-        requiresPermission: {
-          action: 'view',
-          resource: 'ThongKeKhoa',
-        },
-      },
-      {
-        title: 'Thống kê CLB',
-        href: '/dashboard/clubs',
-        requiresPermission: {
-          action: 'view',
-          resource: 'ThongKeCLB',
-        },
-      },
-      {
-        title: 'Thống kê đoàn',
-        href: '/dashboard/union',
-        requiresPermission: {
-          action: 'view',
-          resource: 'ThongKeDoan',
-        },
-      },
-    ],
-  },
-  {
-    title: 'Người dùng',
-    href: '/users',
-    icon: <Users className="mr-2 h-4 w-4" />,
-    requiresAuth: true,
-    allowedRoles: ['ADMIN_HE_THONG'],
-    children: [
-      {
-        title: 'Tất cả người dùng',
-        href: '/users',
-        allowedRoles: ['ADMIN_HE_THONG'],
-      },
-      {
-        title: 'Sinh viên',
-        href: '/users/students',
-        allowedRoles: ['ADMIN_HE_THONG', 'TRUONG_KHOA', 'BI_THU_DOAN', 'TRUONG_CLB'],
-      },
-      {
-        title: 'Giảng viên',
-        href: '/users/lecturers',
-        allowedRoles: ['ADMIN_HE_THONG', 'TRUONG_KHOA'],
-      },
-      {
-        title: 'Phân quyền',
-        href: '/users/roles',
-        allowedRoles: ['ADMIN_HE_THONG'],
-      },
-    ],
-  },
-  {
-    title: 'Đơn vị',
-    href: '/units',
-    icon: <Briefcase className="mr-2 h-4 w-4" />,
-    requiresAuth: true,
-    requiresPermission: {
-      action: 'view',
-      resource: 'DonVi',
-    },
-    children: [
-      {
-        title: 'Tất cả đơn vị',
-        href: '/units',
-        requiresPermission: {
-          action: 'view',
-          resource: 'DonVi',
-        },
-      },
-      {
-        title: 'Khoa',
-        href: '/units/departments',
-        allowedRoles: ['ADMIN_HE_THONG', 'TRUONG_KHOA'],
-      },
-      {
-        title: 'Câu lạc bộ',
-        href: '/units/clubs',
-        allowedRoles: ['ADMIN_HE_THONG', 'TRUONG_CLB'],
-      },
-      {
-        title: 'Đoàn',
-        href: '/units/union',
-        allowedRoles: ['ADMIN_HE_THONG', 'BI_THU_DOAN'],
-      },
-      {
-        title: 'Ngành học',
-        href: '/units/majors',
-        allowedRoles: ['ADMIN_HE_THONG', 'TRUONG_KHOA'],
-      },
-      {
-        title: 'Lớp học',
-        href: '/units/classes',
-        allowedRoles: ['ADMIN_HE_THONG', 'TRUONG_KHOA'],
-      },
-    ],
-  },
-  {
-    title: 'Cài đặt hệ thống',
-    href: '/settings',
-    icon: <Settings className="mr-2 h-4 w-4" />,
-    requiresAuth: true,
-    allowedRoles: ['ADMIN_HE_THONG'],
-  },
-];
-
-const MainNavigation: React.FC = () => {
-  const { user, isAuthenticated, logout, hasRole } = useAuth();
+const MainNavigation = () => {
+  const { user, logout } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Filter navigation items based on user permissions
-  const filteredNavItems = navigationItems.filter(item => {
-    // Public routes accessible to all
-    if (!item.requiresAuth) return true;
-    
-    // Route requires authentication
-    if (!isAuthenticated) return false;
-    
-    // Check for specific allowed roles
-    if (item.allowedRoles && item.allowedRoles.length > 0) {
-      if (!item.allowedRoles.some(role => hasRole(role))) return false;
-    }
-    
-    // Check for specific permissions
-    if (item.requiresPermission && user?.roles) {
-      const { action, resource } = item.requiresPermission;
-      const hasRequiredPermission = user.roles.some(role => 
-        hasPermission(role, action, resource)
-      );
-      if (!hasRequiredPermission) return false;
-    }
-    
-    return true;
-  });
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const isActive = (path: string) => {
+    if (path === "/") return location.pathname === "/";
+    return location.pathname.startsWith(path);
   };
 
+  const MenuItem = ({ to, label, icon: Icon, active }: { to: string; label: string; icon: React.ElementType; active: boolean }) => {
+    return (
+      <Link
+        to={to}
+        className={cn(
+          "flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
+          active
+            ? "bg-primary/10 text-primary font-medium"
+            : "hover:bg-muted"
+        )}
+        onClick={() => setIsOpen(false)}
+      >
+        <Icon className="h-4 w-4" />
+        <span>{label}</span>
+      </Link>
+    );
+  };
+
+  // Navigation links grouped by categories
+  const navigationLinks = [
+    {
+      title: "Trang chủ",
+      to: "/",
+      icon: LayoutDashboard,
+      active: isActive("/"),
+    },
+    {
+      title: "Quản lý sự kiện",
+      to: "/events",
+      icon: CalendarDays,
+      active: isActive("/events"),
+    },
+    {
+      title: "Quản lý cơ sở vật chất",
+      to: "/facilities",
+      icon: Building2,
+      active: isActive("/facilities"),
+    },
+    {
+      title: "Quản lý người dùng",
+      to: "/users",
+      icon: Users,
+      active: isActive("/users"),
+    },
+    {
+      title: "Quản lý đơn vị",
+      to: "/units",
+      icon: Building2,
+      active: isActive("/units"),
+    },
+  ];
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-red-600 text-white backdrop-blur">
-      <div className="container flex h-16 items-center">
-        <div className="mr-4 flex">
-          <Link to="/" className="flex items-center space-x-2">
-            <PTITLogo size={36} />
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 items-center">
+        <div className="flex items-center gap-1 mr-4">
+          <Link to="/" className="flex items-center gap-2">
+            <Logo className="h-6 w-6" />
+            <span className="font-bold text-xl hidden md:inline-block">
+              PTIT Events
+            </span>
           </Link>
         </div>
 
-        <NavigationMenu className="max-w-full flex-1">
-          <NavigationMenuList className="flex-wrap">
-            {filteredNavItems.map((item, index) => {
-              // Skip items with no children
-              if (!item.children || item.children.length === 0) {
-                return (
-                  <NavigationMenuItem key={index}>
-                    <Link to={item.href}>
-                      <NavigationMenuLink 
-                        className={cn(
-                          navigationMenuTriggerStyle(),
-                          "text-white hover:bg-red-700 hover:text-white",
-                          location.pathname === item.href ? "bg-red-700 text-white" : ""
-                        )}
-                      >
-                        {item.icon}
-                        <span>{item.title}</span>
-                      </NavigationMenuLink>
+        {/* Desktop Navigation */}
+        {!isMobile && (
+          <NavigationMenu className="hidden md:flex flex-1 justify-start">
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <Link to="/" legacyBehavior passHref>
+                  <NavigationMenuLink
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      isActive("/") && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    Trang chủ
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <NavigationMenuTrigger
+                  className={cn(
+                    isActive("/events") && "bg-accent text-accent-foreground"
+                  )}
+                >
+                  Sự kiện
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                    <div>
+                      <h4 className="text-sm font-medium leading-none mb-3">
+                        Xem sự kiện
+                      </h4>
+                      <div className="grid gap-1">
+                        <Link
+                          to="/events"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Tất cả sự kiện
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Danh sách tất cả sự kiện trong hệ thống
+                          </p>
+                        </Link>
+                        <Link
+                          to="/dashboard/events"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Thống kê sự kiện
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Xem thống kê tổng quan về các sự kiện
+                          </p>
+                        </Link>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium leading-none mb-3">
+                        Quản lý
+                      </h4>
+                      <div className="grid gap-1">
+                        <Link
+                          to="/events/new"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Tạo sự kiện mới
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Tạo một sự kiện mới và quản lý thông tin
+                          </p>
+                        </Link>
+                        <Link
+                          to="/events/approve"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Phê duyệt sự kiện
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Duyệt các sự kiện đang chờ phê duyệt
+                          </p>
+                        </Link>
+                        <Link
+                          to="/events/cancel-requests"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Yêu cầu hủy sự kiện
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Quản lý các yêu cầu hủy sự kiện
+                          </p>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <NavigationMenuTrigger
+                  className={cn(
+                    isActive("/facilities") &&
+                      "bg-accent text-accent-foreground"
+                  )}
+                >
+                  Cơ sở vật chất
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                    <div>
+                      <h4 className="text-sm font-medium leading-none mb-3">
+                        Quản lý phòng
+                      </h4>
+                      <div className="grid gap-1">
+                        <Link
+                          to="/facilities/rooms"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Danh sách phòng
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Quản lý tất cả các phòng trong trường
+                          </p>
+                        </Link>
+                        <Link
+                          to="/dashboard/facilities"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Thống kê sử dụng
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Xem thống kê việc sử dụng phòng và thiết bị
+                          </p>
+                        </Link>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium leading-none mb-3">
+                        Yêu cầu mượn & đổi
+                      </h4>
+                      <div className="grid gap-1">
+                        <Link
+                          to="/facilities/room-requests"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Yêu cầu mượn phòng
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Quản lý các yêu cầu mượn phòng cho sự kiện
+                          </p>
+                        </Link>
+                        <Link
+                          to="/facilities/room-change-requests"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Yêu cầu đổi phòng
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Xử lý các yêu cầu đổi phòng từ người tổ chức
+                          </p>
+                        </Link>
+                        <Link
+                          to="/facilities/equipment"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Trang thiết bị
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Quản lý các trang thiết bị trong trường
+                          </p>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <NavigationMenuTrigger
+                  className={cn(
+                    (isActive("/units") || isActive("/users")) &&
+                      "bg-accent text-accent-foreground"
+                  )}
+                >
+                  Quản lý
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                    <div>
+                      <h4 className="text-sm font-medium leading-none mb-3">
+                        Quản lý đơn vị
+                      </h4>
+                      <div className="grid gap-1">
+                        <Link
+                          to="/units/departments"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Khoa
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Quản lý thông tin các khoa
+                          </p>
+                        </Link>
+                        <Link
+                          to="/units/clubs"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Câu lạc bộ
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Quản lý thông tin các câu lạc bộ
+                          </p>
+                        </Link>
+                        <Link
+                          to="/units/union"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Đoàn thanh niên
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Quản lý cơ cấu đoàn thanh niên
+                          </p>
+                        </Link>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium leading-none mb-3">
+                        Quản lý người dùng
+                      </h4>
+                      <div className="grid gap-1">
+                        <Link
+                          to="/users/students"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Sinh viên
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Quản lý thông tin sinh viên
+                          </p>
+                        </Link>
+                        <Link
+                          to="/users/lecturers"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Giảng viên
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Quản lý thông tin giảng viên
+                          </p>
+                        </Link>
+                        <Link
+                          to="/users/roles"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <div className="text-sm font-medium leading-none">
+                            Phân quyền
+                          </div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Quản lý vai trò và phân quyền
+                          </p>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        )}
+
+        {/* Mobile menu trigger */}
+        {isMobile && (
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] sm:w-[350px]">
+              <div className="flex items-center gap-2 mb-6">
+                <Logo className="h-6 w-6" />
+                <span className="font-bold text-lg">PTIT Events</span>
+              </div>
+              <div className="flex flex-col gap-1 mt-4">
+                {navigationLinks.map((link) => (
+                  <MenuItem
+                    key={link.to}
+                    to={link.to}
+                    label={link.title}
+                    icon={link.icon}
+                    active={link.active}
+                  />
+                ))}
+              </div>
+              <div className="absolute bottom-4 left-4 right-4">
+                {user ? (
+                  <div className="border rounded-md p-3 flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        <AvatarFallback>{user.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{user.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {user.email}
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full mt-2"
+                      onClick={() => {
+                        logout();
+                        setIsOpen(false);
+                      }}
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Đăng xuất
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <Link to="/login" className="w-full" onClick={() => setIsOpen(false)}>
+                      <Button className="w-full">Đăng nhập</Button>
                     </Link>
-                  </NavigationMenuItem>
-                );
-              }
+                  </div>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
 
-              // Filter children items based on permissions
-              const filteredChildren = item.children.filter(child => {
-                if (child.allowedRoles && !child.allowedRoles.some(role => hasRole(role))) {
-                  return false;
-                }
-                
-                if (child.requiresPermission && user?.roles) {
-                  const { action, resource } = child.requiresPermission;
-                  return user.roles.some(role => hasPermission(role, action, resource));
-                }
-                
-                return true;
-              });
-
-              if (filteredChildren.length === 0) return null;
-
-              return (
-                <NavigationMenuItem key={index}>
-                  <NavigationMenuTrigger className={cn(
-                    "text-white hover:bg-red-700 hover:text-white",
-                    location.pathname.startsWith(item.href) ? "bg-red-700 text-white" : ""
-                  )}>
-                    {item.icon}
-                    <span>{item.title}</span>
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px] bg-white">
-                      {filteredChildren.map((child, childIndex) => (
-                        <li key={childIndex}>
-                          <Link to={child.href} className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                            <div className="text-sm font-medium leading-none">{child.title}</div>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              );
-            })}
-          </NavigationMenuList>
-        </NavigationMenu>
-
-        {/* Theme & Notifications */}
-        <div className="flex items-center space-x-1 mr-2">
+        <div className="flex items-center ml-auto gap-4">
           <ThemeSwitcher />
-          {isAuthenticated && <NotificationBell />}
-        </div>
+          <NotificationBell />
 
-        {/* User menu */}
-        <div className="ml-auto flex items-center space-x-2">
-          {isAuthenticated ? (
-            <Menubar className="border-red-400">
-              <MenubarMenu>
-                <MenubarTrigger className="space-x-2 font-medium text-white hover:bg-red-700 focus:bg-red-700">
-                  <User className="h-4 w-4" />
-                  <span className="max-w-[150px] truncate">{user?.name}</span>
-                </MenubarTrigger>
-                <MenubarContent>
-                  <Link to="/profile">
-                    <MenubarItem className="flex items-center cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Hồ sơ cá nhân</span>
-                    </MenubarItem>
-                  </Link>
-                  
-                  {user?.userType === 'NHAN_VIEN' && (
-                    <MenubarItem>Nhân viên</MenubarItem>
-                  )}
-                  {user?.userType === 'GIANG_VIEN' && (
-                    <MenubarItem>Giảng viên</MenubarItem>
-                  )}
-                  {user?.userType === 'SINH_VIEN' && (
-                    <MenubarItem>Sinh viên</MenubarItem>
-                  )}
-                  
-                  <MenubarSeparator />
-                  <MenubarItem className="flex items-center text-red-500 cursor-pointer" onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Đăng xuất</span>
-                  </MenubarItem>
-                </MenubarContent>
-              </MenubarMenu>
-            </Menubar>
+          {/* User Menu (Desktop) */}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full md:flex hidden"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    <AvatarFallback>{user.name[0]}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user.name}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <Link to="/profile">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Thông tin cá nhân</span>
+                  </DropdownMenuItem>
+                </Link>
+                <DropdownMenuItem onClick={() => logout()}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Đăng xuất</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <Link to="/login" className={cn(navigationMenuTriggerStyle(), "bg-white text-red-600 hover:bg-gray-100")}>
-              Đăng nhập
+            <Link to="/login" className="hidden md:block">
+              <Button>Đăng nhập</Button>
             </Link>
           )}
         </div>

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole, UserType } from '@/lib/roles';
 import { toast } from '@/components/ui/sonner';
@@ -59,6 +60,15 @@ const MOCK_USERS: Record<string, User> = {
     donViId: '2',
     avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Tr%C6%B0%E1%BB%9Fng%20Khoa%20CNTT&backgroundColor=1e88e5'
   },
+  'dean2@example.com': {
+    id: '10',
+    name: 'Trưởng Khoa ĐTVT',
+    email: 'dean2@example.com',
+    userType: 'GIANG_VIEN',
+    roles: ['TRUONG_KHOA'],
+    donViId: '5',
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Tr%C6%B0%E1%BB%9Fng%20Khoa%20%C4%90TVT&backgroundColor=1e88e5'
+  },
   'principal@example.com': {
     id: '5',
     name: 'Ban Giám Hiệu',
@@ -76,6 +86,15 @@ const MOCK_USERS: Record<string, User> = {
     donViId: '3',
     avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Tr%C6%B0%E1%BB%9Fng%20CLB%20IT&backgroundColor=1e88e5'
   },
+  'club2@example.com': {
+    id: '11',
+    name: 'Trưởng CLB Nhạc cụ dân tộc',
+    email: 'club2@example.com',
+    userType: 'SINH_VIEN',
+    roles: ['TRUONG_CLB'],
+    donViId: '7',
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Tr%C6%B0%E1%BB%9Fng%20CLB%20NCDT&backgroundColor=1e88e5'
+  },
   'union@example.com': {
     id: '9',
     name: 'Bí Thư Đoàn PTIT',
@@ -84,6 +103,15 @@ const MOCK_USERS: Record<string, User> = {
     roles: ['BI_THU_DOAN'],
     donViId: '4',
     avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=B%C3%AD%20Th%C6%B0%20%C4%90o%C3%A0n&backgroundColor=1e88e5'
+  },
+  'union2@example.com': {
+    id: '12',
+    name: 'Bí Thư Đoàn Khoa CNTT',
+    email: 'union2@example.com',
+    userType: 'SINH_VIEN',
+    roles: ['BI_THU_DOAN'],
+    donViId: '6',
+    avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=B%C3%AD%20Th%C6%B0%20%C4%90o%C3%A0n%20CNTT&backgroundColor=1e88e5'
   },
   'student@example.com': {
     id: '7',

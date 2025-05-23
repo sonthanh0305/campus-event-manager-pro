@@ -162,6 +162,8 @@ const Login: React.FC = () => {
               <div className="bg-muted rounded px-2 py-1">club@example.com</div>
               <div className="bg-muted rounded px-2 py-1">student@example.com</div>
               <div className="bg-muted rounded px-2 py-1">lecturer@example.com</div>
+              <div className="bg-muted rounded px-2 py-1">union@example.com</div>
+              <div className="bg-muted rounded px-2 py-1">secretary@example.com</div>
             </div>
             <p className="mt-2 text-center text-xs text-muted-foreground">(Mật khẩu bất kỳ)</p>
           </div>

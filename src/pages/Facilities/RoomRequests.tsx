@@ -1,946 +1,445 @@
 
 import React, { useState } from 'react';
-import MainNavigation from '@/components/MainNavigation';
+import { format, parseISO, addDays } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import DashboardLayout from "@/components/DashboardLayout";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+import { RoomCalendar } from '@/components/ui/room-calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { DatePickerWithRange } from '@/components/DateRangePicker';
-import { Calendar as CalendarIcon, ArrowRight, Clock, User, Users, MapPin, Calendar, CheckCircle, XCircle, ChevronDown, Filter, Search } from 'lucide-react';
-import { addDays, format, isSameDay, parse, startOfWeek } from 'date-fns';
-import { DateRange } from 'react-day-picker';
-import { useToast } from '@/hooks/use-toast';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { DatePicker } from '@/components/DateRangePicker';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar, Check, Clock, Filter, MapPin, Users, X } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
-// Room request type
-type RoomRequestStatus = 'pending' | 'approved' | 'rejected' | 'assigned';
+// Mock data for rooms
+const mockRooms = [
+  { id: '1', name: 'Hội trường A', type: 'conference', capacity: 300, building: 'A', floor: '1', status: 'available' },
+  { id: '2', name: 'Hội trường B', type: 'conference', capacity: 250, building: 'B', floor: '1', status: 'available' },
+  { id: '3', name: 'Phòng hội thảo B2-01', type: 'seminar', capacity: 80, building: 'B', floor: '2', status: 'available' },
+  { id: '4', name: 'Phòng họp A3-01', type: 'meeting', capacity: 30, building: 'A', floor: '3', status: 'available' },
+  { id: '5', name: 'Phòng thực hành CNTT', type: 'lab', capacity: 60, building: 'C', floor: '1', status: 'available' },
+];
 
-interface RoomRequest {
-  id: string;
-  eventName: string;
-  organizerName: string;
-  organizerUnit: string;
-  requestDate: string;
-  eventStartDate: string;
-  eventEndDate: string;
-  expectedAttendees: number;
-  equipmentNeeds: string[];
-  specialRequirements: string;
-  status: RoomRequestStatus;
-  assignedRooms?: AssignedRoom[];
-}
-
-interface AssignedRoom {
-  roomId: string;
-  roomName: string;
-  building: string;
-  floor: number;
-  capacity: number;
-  startDate: string;
-  endDate: string;
-}
-
-interface Room {
-  id: string;
-  name: string;
-  building: string;
-  floor: number;
-  capacity: number;
-  type: string;
-  equipment: string[];
-  availability: TimeSlot[];
-}
-
-interface TimeSlot {
-  date: string;
-  startTime: string;
-  endTime: string;
-  isAvailable: boolean;
-  eventId?: string;
-  eventName?: string;
-}
-
-// Mock data
-const mockRoomRequests: RoomRequest[] = [
+// Mock data for bookings
+const mockBookings = [
   {
     id: '1',
-    eventName: 'Hội nghị Khoa học Công nghệ 2023',
-    organizerName: 'TS. Nguyễn Văn A',
-    organizerUnit: 'Khoa Công nghệ Thông tin',
-    requestDate: '2023-10-15T08:00:00',
-    eventStartDate: '2023-11-20T08:00:00',
-    eventEndDate: '2023-11-20T16:00:00',
-    expectedAttendees: 150,
-    equipmentNeeds: ['Máy chiếu', 'Micro không dây', 'Hệ thống âm thanh'],
-    specialRequirements: 'Cần bàn ghế xếp theo kiểu hội nghị, có bàn cho ban tổ chức',
-    status: 'pending'
+    roomId: '1',
+    title: 'Hội nghị Khoa học Công nghệ 2023',
+    organizer: 'Khoa Công nghệ Thông tin',
+    start: new Date(2025, 4, 23, 8, 0),
+    end: new Date(2025, 4, 23, 12, 0),
+    status: 'approved' as const,
+    participantsCount: 250
   },
   {
     id: '2',
-    eventName: 'Workshop Kỹ năng mềm cho sinh viên',
-    organizerName: 'ThS. Trần Thị B',
-    organizerUnit: 'Phòng Công tác Sinh viên',
-    requestDate: '2023-10-17T10:30:00',
-    eventStartDate: '2023-11-25T13:30:00',
-    eventEndDate: '2023-11-25T16:30:00',
-    expectedAttendees: 80,
-    equipmentNeeds: ['Máy chiếu', 'Micro không dây'],
-    specialRequirements: 'Bàn ghế có thể di chuyển để làm việc nhóm',
-    status: 'pending'
+    roomId: '3',
+    title: 'Workshop Kỹ năng mềm cho sinh viên',
+    organizer: 'Phòng Công tác Sinh viên',
+    start: new Date(2025, 4, 24, 13, 30),
+    end: new Date(2025, 4, 24, 17, 0),
+    status: 'approved' as const,
+    participantsCount: 70
   },
   {
     id: '3',
-    eventName: 'Cuộc thi Lập trình IoT 2023',
-    organizerName: 'ThS. Phạm Văn C',
-    organizerUnit: 'CLB IT',
-    requestDate: '2023-10-20T14:15:00',
-    eventStartDate: '2023-12-01T08:00:00',
-    eventEndDate: '2023-12-01T17:00:00',
-    expectedAttendees: 100,
-    equipmentNeeds: ['Máy chiếu', 'Micro không dây', 'Kết nối internet tốc độ cao', 'Ổ cắm điện nhiều'],
-    specialRequirements: 'Cần không gian rộng để đặt các mô hình IoT, nhiều bàn dài',
-    status: 'approved',
-    assignedRooms: [
-      {
-        roomId: 'B1-01',
-        roomName: 'Phòng thực hành B1-01',
-        building: 'B1',
-        floor: 1,
-        capacity: 120,
-        startDate: '2023-12-01T08:00:00',
-        endDate: '2023-12-01T17:00:00'
-      }
-    ]
+    roomId: '5',
+    title: 'Cuộc thi Lập trình IoT 2023',
+    organizer: 'CLB IT',
+    start: new Date(2025, 4, 22, 8, 0),
+    end: new Date(2025, 4, 22, 17, 0),
+    status: 'pending' as const,
+    participantsCount: 55
   },
-  {
-    id: '4',
-    eventName: 'Seminar về Trí tuệ nhân tạo',
-    organizerName: 'TS. Lê D',
-    organizerUnit: 'Khoa Công nghệ Thông tin',
-    requestDate: '2023-10-22T09:45:00',
-    eventStartDate: '2023-11-28T09:00:00',
-    eventEndDate: '2023-11-28T11:30:00',
-    expectedAttendees: 60,
-    equipmentNeeds: ['Máy chiếu', 'Micro không dây', 'Hệ thống âm thanh'],
-    specialRequirements: '',
-    status: 'pending'
-  },
-  {
-    id: '5',
-    eventName: 'Tập huấn kỹ năng nghiên cứu khoa học',
-    organizerName: 'PGS.TS. Hoàng E',
-    organizerUnit: 'Phòng Khoa học Công nghệ',
-    requestDate: '2023-10-25T11:20:00',
-    eventStartDate: '2023-12-05T13:00:00',
-    eventEndDate: '2023-12-05T17:00:00',
-    expectedAttendees: 45,
-    equipmentNeeds: ['Máy chiếu', 'Micro không dây'],
-    specialRequirements: 'Cần bố trí chỗ ngồi theo nhóm 5-6 người',
-    status: 'rejected'
-  }
 ];
 
-const mockRooms: Room[] = [
-  {
-    id: 'A1-01',
-    name: 'Phòng học A1-01',
-    building: 'A1',
-    floor: 1,
-    capacity: 60,
-    type: 'Phòng học',
-    equipment: ['Máy chiếu', 'Micro có dây', 'Điều hòa'],
-    availability: generateAvailability('A1-01')
-  },
-  {
-    id: 'A1-02',
-    name: 'Phòng học A1-02',
-    building: 'A1',
-    floor: 1,
-    capacity: 60,
-    type: 'Phòng học',
-    equipment: ['Máy chiếu', 'Micro có dây', 'Điều hòa'],
-    availability: generateAvailability('A1-02')
-  },
-  {
-    id: 'A2-01',
-    name: 'Phòng thực hành A2-01',
-    building: 'A2',
-    floor: 1,
-    capacity: 40,
-    type: 'Phòng thực hành',
-    equipment: ['Máy chiếu', 'Máy tính (40)', 'Điều hòa', 'Micro không dây'],
-    availability: generateAvailability('A2-01')
-  },
-  {
-    id: 'B1-01',
-    name: 'Phòng thực hành B1-01',
-    building: 'B1',
-    floor: 1,
-    capacity: 120,
-    type: 'Phòng thực hành lớn',
-    equipment: ['Máy chiếu', 'Máy tính (40)', 'Hệ thống âm thanh', 'Micro không dây', 'Điều hòa'],
-    availability: generateAvailability('B1-01')
-  },
-  {
-    id: 'B2-01',
-    name: 'Hội trường B2-01',
-    building: 'B2',
-    floor: 1,
-    capacity: 200,
-    type: 'Hội trường',
-    equipment: ['Máy chiếu', 'Hệ thống âm thanh', 'Micro không dây (4)', 'Điều hòa', 'Bục phát biểu'],
-    availability: generateAvailability('B2-01')
-  },
-  {
-    id: 'C1-01',
-    name: 'Phòng hội thảo C1-01',
-    building: 'C1',
-    floor: 1,
-    capacity: 80,
-    type: 'Phòng hội thảo',
-    equipment: ['Máy chiếu', 'Hệ thống âm thanh', 'Micro không dây (2)', 'Điều hòa', 'Bàn hội nghị'],
-    availability: generateAvailability('C1-01')
-  }
-];
-
-// Helper function to generate mock availability
-function generateAvailability(roomId: string): TimeSlot[] {
-  const availability: TimeSlot[] = [];
-  const startDate = new Date();
-  
-  // Generate availability for next 30 days
-  for (let i = 0; i < 30; i++) {
-    const currentDate = addDays(startDate, i);
-    const dateStr = format(currentDate, 'yyyy-MM-dd');
-    
-    // Morning slot
-    availability.push({
-      date: dateStr,
-      startTime: '08:00',
-      endTime: '12:00',
-      isAvailable: Math.random() > 0.3,  // 70% chance of being available
-      ...(Math.random() > 0.7 && {
-        eventId: `event-${Math.floor(Math.random() * 100)}`,
-        eventName: 'Sự kiện ngẫu nhiên'
-      })
-    });
-    
-    // Afternoon slot
-    availability.push({
-      date: dateStr,
-      startTime: '13:00',
-      endTime: '17:00',
-      isAvailable: Math.random() > 0.3,
-      ...(Math.random() > 0.7 && {
-        eventId: `event-${Math.floor(Math.random() * 100)}`,
-        eventName: 'Sự kiện ngẫu nhiên'
-      })
-    });
-    
-    // Evening slot (some days)
-    if (Math.random() > 0.7) {
-      availability.push({
-        date: dateStr,
-        startTime: '18:00',
-        endTime: '21:00',
-        isAvailable: Math.random() > 0.3,
-        ...(Math.random() > 0.7 && {
-          eventId: `event-${Math.floor(Math.random() * 100)}`,
-          eventName: 'Sự kiện ngẫu nhiên buổi tối'
-        })
-      });
-    }
-  }
-  
-  return availability;
+interface TimeSlot {
+  id: string;
+  start: Date;
+  end: Date;
 }
 
-// Helper function to format date
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('vi-VN', { 
-    day: '2-digit', 
-    month: '2-digit', 
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(date);
-};
-
 const RoomRequests = () => {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('pending');
-  const [selectedRequest, setSelectedRequest] = useState<RoomRequest | null>(null);
-  const [assignRoomDialogOpen, setAssignRoomDialogOpen] = useState(false);
-  const [roomsDialogOpen, setRoomsDialogOpen] = useState(false);
-  const [selectedRooms, setSelectedRooms] = useState<Room[]>([]);
-  const [filteredRooms, setFilteredRooms] = useState<Room[]>(mockRooms);
+  const [date, setDate] = useState<Date>(new Date());
+  const [selectedRoom, setSelectedRoom] = useState<string>('');
+  const [filterRoom, setFilterRoom] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [isNewRequestDialogOpen, setIsNewRequestDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<TimeSlot[]>([]);
   
-  // State for room filtering
-  const [buildingFilter, setBuildingFilter] = useState<string>('all');
-  const [capacityFilter, setCapacityFilter] = useState<string>('all');
-  const [equipmentFilter, setEquipmentFilter] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  
-  // State for room assignment
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: selectedRequest ? new Date(selectedRequest.eventStartDate) : undefined,
-    to: selectedRequest ? new Date(selectedRequest.eventEndDate) : undefined,
+  // Form state
+  const [eventTitle, setEventTitle] = useState('');
+  const [participantsCount, setParticipantsCount] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [equipment, setEquipment] = useState('');
+
+  // Filter bookings
+  const filteredBookings = mockBookings.filter(booking => {
+    return (filterRoom === 'all' || booking.roomId === filterRoom) &&
+           (filterStatus === 'all' || booking.status === filterStatus);
   });
   
-  // State for calendar view
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  // Format bookings for calendar
+  const calendarBookings = mockBookings.map(booking => ({
+    id: booking.id,
+    roomId: booking.roomId,
+    title: booking.title,
+    start: booking.start,
+    end: booking.end,
+    status: booking.status
+  }));
   
-  // Get filtered requests based on tab
-  const getFilteredRequests = () => {
-    switch (activeTab) {
-      case 'pending':
-        return mockRoomRequests.filter(req => req.status === 'pending');
-      case 'approved':
-        return mockRoomRequests.filter(req => req.status === 'approved' || req.status === 'assigned');
-      case 'rejected':
-        return mockRoomRequests.filter(req => req.status === 'rejected');
-      default:
-        return mockRoomRequests;
-    }
-  };
-  
-  // Handle opening assign room dialog
-  const handleAssignRoom = (request: RoomRequest) => {
-    setSelectedRequest(request);
-    setDateRange({
-      from: new Date(request.eventStartDate),
-      to: new Date(request.eventEndDate),
-    });
-    setAssignRoomDialogOpen(true);
-  };
-  
-  // Handle opening room selection dialog
-  const handleViewRooms = () => {
-    // Apply filters based on the selected request
-    filterRooms();
-    setRoomsDialogOpen(true);
-  };
-  
-  // Filter rooms based on criteria
-  const filterRooms = () => {
-    let filtered = [...mockRooms];
+  // Handle time slot selection
+  const handleTimeSlotClick = (roomId: string, timeSlot: TimeSlot) => {
+    const existingIndex = selectedTimeSlots.findIndex(slot => slot.id === timeSlot.id);
     
-    // Filter by building
-    if (buildingFilter !== 'all') {
-      filtered = filtered.filter(room => room.building === buildingFilter);
-    }
-    
-    // Filter by capacity
-    if (capacityFilter !== 'all') {
-      const minCapacity = parseInt(capacityFilter);
-      filtered = filtered.filter(room => room.capacity >= minCapacity);
-    }
-    
-    // Filter by equipment
-    if (equipmentFilter.length > 0) {
-      filtered = filtered.filter(room => 
-        equipmentFilter.every(equipment => room.equipment.includes(equipment))
-      );
-    }
-    
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        room => room.name.toLowerCase().includes(query) || 
-               room.id.toLowerCase().includes(query)
-      );
-    }
-    
-    // If we have a selected request, filter by capacity
-    if (selectedRequest) {
-      filtered = filtered.filter(room => room.capacity >= selectedRequest.expectedAttendees);
-    }
-    
-    setFilteredRooms(filtered);
-  };
-  
-  // Handle room selection
-  const toggleRoomSelection = (room: Room) => {
-    if (selectedRooms.some(r => r.id === room.id)) {
-      setSelectedRooms(selectedRooms.filter(r => r.id !== room.id));
+    if (existingIndex >= 0) {
+      // Remove if already selected
+      setSelectedTimeSlots(prev => prev.filter(slot => slot.id !== timeSlot.id));
     } else {
-      setSelectedRooms([...selectedRooms, room]);
+      // Add new selection
+      setSelectedTimeSlots(prev => [...prev, timeSlot]);
     }
   };
   
-  // Handle room assignment
-  const handleConfirmAssignment = () => {
-    if (!selectedRequest || !dateRange || !dateRange.from || selectedRooms.length === 0) {
-      toast({
-        title: "Không thể phân công phòng",
-        description: "Vui lòng chọn phòng và thời gian phù hợp.",
-        variant: "destructive"
-      });
+  // Submit new request
+  const handleSubmitRequest = () => {
+    if (!eventTitle) {
+      toast.error('Vui lòng nhập tên sự kiện');
       return;
     }
     
-    // Update the request status and assigned rooms
-    const updatedRequests = mockRoomRequests.map(req => {
-      if (req.id === selectedRequest.id) {
-        return {
-          ...req,
-          status: 'assigned' as RoomRequestStatus,
-          assignedRooms: selectedRooms.map(room => ({
-            roomId: room.id,
-            roomName: room.name,
-            building: room.building,
-            floor: room.floor,
-            capacity: room.capacity,
-            startDate: dateRange.from.toISOString(),
-            endDate: dateRange.to ? dateRange.to.toISOString() : dateRange.from.toISOString()
-          }))
-        };
-      }
-      return req;
-    });
-    
-    // In a real app, you would update the server here
-    // For now, we'll just log the updated requests
-    console.log('Updated requests:', updatedRequests);
-    
-    toast({
-      title: "Phân công phòng thành công",
-      description: `Đã phân công ${selectedRooms.length} phòng cho sự kiện "${selectedRequest.eventName}"`,
-    });
-    
-    // Close dialogs and reset state
-    setAssignRoomDialogOpen(false);
-    setRoomsDialogOpen(false);
-    setSelectedRequest(null);
-    setSelectedRooms([]);
-  };
-  
-  // Generate days for the room calendar
-  const getDaysOfWeek = () => {
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      days.push(addDays(currentWeekStart, i));
+    if (!selectedRoom) {
+      toast.error('Vui lòng chọn phòng');
+      return;
     }
-    return days;
-  };
-  
-  // Check if a room is available for a specific day
-  const isRoomAvailableOnDay = (room: Room, day: Date) => {
-    const dayStr = format(day, 'yyyy-MM-dd');
-    const availabilityForDay = room.availability.filter(slot => 
-      slot.date === dayStr && slot.isAvailable
-    );
     
-    // If there are any available slots for this day, return true
-    return availabilityForDay.length > 0;
+    if (selectedTimeSlots.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một khung giờ');
+      return;
+    }
+    
+    toast.success('Đã gửi yêu cầu mượn phòng thành công');
+    setIsNewRequestDialogOpen(false);
+    resetForm();
   };
   
-  // Get the status badge for a request
-  const getStatusBadge = (status: RoomRequestStatus) => {
-    switch(status) {
-      case 'approved':
-        return <Badge className="bg-blue-500">Đã duyệt</Badge>;
-      case 'assigned':
-        return <Badge className="bg-green-500">Đã phân phòng</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-500">Chờ xử lý</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">Từ chối</Badge>;
-      default:
-        return <Badge variant="outline">Không xác định</Badge>;
-    }
+  // Reset form
+  const resetForm = () => {
+    setEventTitle('');
+    setSelectedRoom('');
+    setParticipantsCount('');
+    setPurpose('');
+    setEquipment('');
+    setSelectedTimeSlots([]);
   };
   
   return (
-    <div className="flex min-h-screen flex-col">
-      <MainNavigation />
-      
-      <main className="flex-1 container py-6">
-        <h1 className="text-3xl font-bold tracking-tight mb-6">Quản lý yêu cầu mượn phòng</h1>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="pending">Chờ xử lý</TabsTrigger>
-            <TabsTrigger value="approved">Đã phân phòng</TabsTrigger>
-            <TabsTrigger value="rejected">Đã từ chối</TabsTrigger>
-            <TabsTrigger value="all">Tất cả</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value={activeTab} className="space-y-6">
-            <div className="grid grid-cols-1 gap-6">
-              {getFilteredRequests().map((request) => (
-                <Card key={request.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-xl">{request.eventName}</CardTitle>
-                        <CardDescription className="mt-1">Yêu cầu bởi {request.organizerName} ({request.organizerUnit})</CardDescription>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        {getStatusBadge(request.status)}
-                        <span className="text-xs text-muted-foreground">
-                          Yêu cầu: {formatDate(request.requestDate)}
-                        </span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-medium mb-2">Thông tin sự kiện</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>Thời gian: {formatDate(request.eventStartDate)} - {formatDate(request.eventEndDate)}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span>Số người tham dự dự kiến: {request.expectedAttendees}</span>
-                          </div>
-                          {request.specialRequirements && (
-                            <div className="flex items-start gap-2">
-                              <ChevronDown className="h-4 w-4 text-muted-foreground mt-1" />
-                              <span>Yêu cầu đặc biệt: {request.specialRequirements}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-medium mb-2">Thiết bị cần thiết</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {request.equipmentNeeds.map((equipment, index) => (
-                            <Badge key={index} variant="outline" className="bg-muted/50">
-                              {equipment}
-                            </Badge>
-                          ))}
-                        </div>
-                        
-                        {request.status === 'assigned' && request.assignedRooms && (
-                          <div className="mt-4">
-                            <h4 className="font-medium mb-2">Phòng đã phân công</h4>
-                            <div className="space-y-2">
-                              {request.assignedRooms.map((room) => (
-                                <div key={room.roomId} className="p-3 bg-muted/50 rounded-md">
-                                  <div className="flex justify-between">
-                                    <span className="font-medium">{room.roomName}</span>
-                                    <span>Sức chứa: {room.capacity} người</span>
-                                  </div>
-                                  <div className="text-sm text-muted-foreground mt-1">
-                                    <div className="flex items-center gap-1">
-                                      <MapPin className="h-3 w-3" />
-                                      <span>Tòa {room.building}, Tầng {room.floor}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 mt-1">
-                                      <Clock className="h-3 w-3" />
-                                      <span>{formatDate(room.startDate)} - {formatDate(room.endDate)}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                  
-                  <CardFooter className="border-t pt-4">
-                    <div className="flex justify-end w-full gap-3">
-                      {request.status === 'pending' && (
-                        <>
-                          <Button variant="outline" onClick={() => toast({
-                            title: "Yêu cầu đã bị từ chối",
-                            description: "Bạn đã từ chối yêu cầu mượn phòng này.",
-                            variant: "destructive"
-                          })}>
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Từ chối
-                          </Button>
-                          <Button onClick={() => handleAssignRoom(request)}>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Phân công phòng
-                          </Button>
-                        </>
-                      )}
-                      
-                      {request.status === 'assigned' && (
-                        <Button variant="outline" onClick={() => toast({
-                          title: "Chức năng đang phát triển",
-                          description: "Chức năng chỉnh sửa phân công phòng đang được phát triển.",
-                        })}>
-                          <ArrowRight className="h-4 w-4 mr-2" />
-                          Chỉnh sửa phân công
-                        </Button>
-                      )}
-                    </div>
-                  </CardFooter>
-                </Card>
-              ))}
-              
-              {getFilteredRequests().length === 0 && (
-                <div className="text-center py-12">
-                  <h3 className="text-lg font-medium text-muted-foreground">
-                    Không có yêu cầu mượn phòng nào {activeTab === 'pending' ? 'đang chờ xử lý' : activeTab === 'approved' ? 'đã được phân phòng' : activeTab === 'rejected' ? 'bị từ chối' : ''}
-                  </h3>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
-      
-      {/* Dialog for Room Assignment */}
-      {selectedRequest && (
-        <Dialog open={assignRoomDialogOpen} onOpenChange={setAssignRoomDialogOpen}>
-          <DialogContent className="sm:max-w-[900px]">
-            <DialogHeader>
-              <DialogTitle>Phân công phòng cho sự kiện</DialogTitle>
-              <DialogDescription>
-                {selectedRequest.eventName} - {formatDate(selectedRequest.eventStartDate)} - {formatDate(selectedRequest.eventEndDate)}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid grid-cols-1 gap-6 py-4">
-              <div>
-                <Label className="mb-2 block">Thời gian sử dụng</Label>
-                <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-lg">Phòng được chọn ({selectedRooms.length})</h4>
-                  <Button variant="outline" onClick={handleViewRooms}>
-                    Tìm và chọn phòng
-                  </Button>
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Yêu cầu mượn phòng</h1>
+            <p className="text-muted-foreground">Quản lý các yêu cầu mượn phòng cho các sự kiện</p>
+          </div>
+          <Dialog open={isNewRequestDialogOpen} onOpenChange={setIsNewRequestDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Calendar className="mr-2 h-4 w-4" />
+                Tạo yêu cầu mới
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Tạo yêu cầu mượn phòng mới</DialogTitle>
+                <DialogDescription>
+                  Điền thông tin và chọn khung giờ để đặt phòng cho sự kiện của bạn
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Tên sự kiện</label>
+                    <Input 
+                      placeholder="Nhập tên sự kiện" 
+                      value={eventTitle} 
+                      onChange={(e) => setEventTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Số người tham dự</label>
+                    <Input 
+                      type="number" 
+                      placeholder="Nhập số người tham dự" 
+                      value={participantsCount} 
+                      onChange={(e) => setParticipantsCount(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Chọn phòng</label>
+                    <Select value={selectedRoom} onValueChange={setSelectedRoom}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn phòng" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockRooms.map(room => (
+                          <SelectItem key={room.id} value={room.id}>
+                            {room.name} (Sức chứa: {room.capacity})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 
-                {selectedRooms.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedRooms.map((room) => (
-                      <Card key={room.id} className="bg-accent/50 border-accent">
-                        <CardHeader className="py-3 px-4">
-                          <div className="flex justify-between items-center">
-                            <CardTitle className="text-base">{room.name}</CardTitle>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 w-8 p-0" 
-                              onClick={() => toggleRoomSelection(room)}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Mục đích sử dụng</label>
+                  <Textarea 
+                    placeholder="Mô tả mục đích sử dụng phòng" 
+                    value={purpose} 
+                    onChange={(e) => setPurpose(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Yêu cầu thiết bị</label>
+                  <Textarea 
+                    placeholder="Liệt kê các thiết bị cần sử dụng (nếu có)" 
+                    value={equipment} 
+                    onChange={(e) => setEquipment(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="flex justify-between">
+                    <span className="text-sm font-medium">Chọn khung giờ</span>
+                    <span className="text-xs text-muted-foreground">Đã chọn {selectedTimeSlots.length} khung giờ</span>
+                  </label>
+                  {selectedRoom ? (
+                    <div className="border rounded-md">
+                      <RoomCalendar
+                        rooms={mockRooms.filter(room => room.id === selectedRoom)}
+                        bookings={calendarBookings}
+                        date={date}
+                        onDateChange={setDate}
+                        onTimeSlotClick={handleTimeSlotClick}
+                        selectedSlots={selectedTimeSlots}
+                        mode="select"
+                      />
+                    </div>
+                  ) : (
+                    <div className="border rounded-md p-4 text-center text-muted-foreground">
+                      Vui lòng chọn phòng trước
+                    </div>
+                  )}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                  setIsNewRequestDialogOpen(false);
+                  resetForm();
+                }}>
+                  Hủy
+                </Button>
+                <Button onClick={handleSubmitRequest}>Gửi yêu cầu</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <Tabs defaultValue="pending" className="space-y-4">
+          <div className="flex justify-between">
+            <TabsList>
+              <TabsTrigger value="pending">Chờ duyệt</TabsTrigger>
+              <TabsTrigger value="approved">Đã duyệt</TabsTrigger>
+              <TabsTrigger value="all">Tất cả yêu cầu</TabsTrigger>
+            </TabsList>
+            <div className="flex gap-2">
+              <Select value={filterRoom} onValueChange={setFilterRoom}>
+                <SelectTrigger className="w-[200px]">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Lọc theo phòng" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả phòng</SelectItem>
+                  {mockRooms.map(room => (
+                    <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Danh sách yêu cầu mượn phòng</CardTitle>
+              <CardDescription>
+                Quản lý các yêu cầu mượn phòng từ các đơn vị
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {filteredBookings.length > 0 ? (
+                  filteredBookings.map(booking => (
+                    <div 
+                      key={booking.id} 
+                      className="flex flex-col md:flex-row p-4 border rounded-md hover:bg-muted/50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedBooking(booking);
+                        setIsDetailsDialogOpen(true);
+                      }}
+                    >
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium">{booking.title}</h3>
+                          <div className={`px-2 py-1 rounded-full text-xs ${
+                            booking.status === 'approved' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}>
+                            {booking.status === 'approved' ? 'Đã duyệt' : 'Chờ duyệt'}
                           </div>
-                        </CardHeader>
-                        <CardContent className="py-2 px-4">
-                          <div className="text-sm space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Vị trí:</span>
-                              <span>Tòa {room.building}, Tầng {room.floor}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Sức chứa:</span>
-                              <span>{room.capacity} người</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Loại phòng:</span>
-                              <span>{room.type}</span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Đơn vị: {booking.organizer}
+                        </div>
+                      </div>
+                      <div className="flex flex-row md:flex-col gap-4 mt-2 md:mt-0 text-sm text-muted-foreground">
+                        <div className="flex items-center">
+                          <MapPin className="h-4 w-4 mr-1" />
+                          <span>{mockRooms.find(room => room.id === booking.roomId)?.name}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          <span>
+                            {format(booking.start, 'HH:mm dd/MM/yyyy', { locale: vi })}
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Users className="h-4 w-4 mr-1" />
+                          <span>{booking.participantsCount} người</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 ) : (
-                  <div className="text-center py-8 border border-dashed rounded-md">
-                    <p className="text-muted-foreground">Chưa có phòng nào được chọn</p>
-                    <p className="text-sm text-muted-foreground mt-1">Nhấn "Tìm và chọn phòng" để bắt đầu</p>
+                  <div className="p-8 text-center text-muted-foreground">
+                    Không có yêu cầu mượn phòng nào
                   </div>
                 )}
               </div>
-            </div>
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setAssignRoomDialogOpen(false)}>
-                Hủy
-              </Button>
-              <Button 
-                onClick={handleConfirmAssignment}
-                disabled={selectedRooms.length === 0 || !dateRange || !dateRange.from}
-              >
-                Xác nhận phân công
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-      
-      {/* Dialog for Room Selection */}
-      <Dialog open={roomsDialogOpen} onOpenChange={setRoomsDialogOpen}>
-        <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>Chọn phòng phù hợp</DialogTitle>
-            <DialogDescription>
-              Tìm và chọn phòng phù hợp với yêu cầu của sự kiện
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid grid-cols-1 gap-6 py-4">
-            {/* Search and filters */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Tìm kiếm phòng..." 
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyUp={() => filterRooms()}
-                />
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <Select value={buildingFilter} onValueChange={(value) => { setBuildingFilter(value); filterRooms(); }}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Chọn tòa nhà" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả tòa nhà</SelectItem>
-                    <SelectItem value="A1">Tòa A1</SelectItem>
-                    <SelectItem value="A2">Tòa A2</SelectItem>
-                    <SelectItem value="B1">Tòa B1</SelectItem>
-                    <SelectItem value="B2">Tòa B2</SelectItem>
-                    <SelectItem value="C1">Tòa C1</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <Select value={capacityFilter} onValueChange={(value) => { setCapacityFilter(value); filterRooms(); }}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Sức chứa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả sức chứa</SelectItem>
-                    <SelectItem value="30">≥ 30 người</SelectItem>
-                    <SelectItem value="50">≥ 50 người</SelectItem>
-                    <SelectItem value="100">≥ 100 người</SelectItem>
-                    <SelectItem value="150">≥ 150 người</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <Tabs defaultValue="list">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="list">Danh sách phòng</TabsTrigger>
-                <TabsTrigger value="calendar">Lịch phòng</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="list">
-                <ScrollArea className="h-[400px]">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {filteredRooms.map((room) => (
-                      <Card
-                        key={room.id}
-                        className={`cursor-pointer transition-colors hover:border-primary ${
-                          selectedRooms.some(r => r.id === room.id) ? 'border-primary bg-primary/5' : ''
-                        }`}
-                        onClick={() => toggleRoomSelection(room)}
-                      >
-                        <CardHeader className="py-3 px-4">
-                          <div className="flex justify-between items-center">
-                            <CardTitle className="text-base">{room.name}</CardTitle>
-                            <Badge variant="outline">
-                              {room.capacity} người
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="py-2 px-4">
-                          <div className="text-sm space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Vị trí:</span>
-                              <span>Tòa {room.building}, Tầng {room.floor}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Loại phòng:</span>
-                              <span>{room.type}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground block mb-1">Trang thiết bị:</span>
-                              <div className="flex flex-wrap gap-1">
-                                {room.equipment.map((eq, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs bg-muted/50">
-                                    {eq}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                        <CardFooter className="py-2 px-4 border-t bg-muted/20">
-                          <div className="w-full flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">
-                              {selectedRooms.some(r => r.id === room.id) ? 'Đã chọn' : 'Nhấn để chọn'}
-                            </span>
-                            {selectedRooms.some(r => r.id === room.id) && (
-                              <CheckCircle className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                    
-                    {filteredRooms.length === 0 && (
-                      <div className="col-span-2 text-center py-12">
-                        <h3 className="text-lg font-medium text-muted-foreground">
-                          Không tìm thấy phòng phù hợp với tiêu chí đã chọn
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Hãy thử điều chỉnh bộ lọc hoặc tìm kiếm
-                        </p>
-                      </div>
-                    )}
+            </CardContent>
+          </Card>
+
+          <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Chi tiết yêu cầu mượn phòng</DialogTitle>
+              </DialogHeader>
+              {selectedBooking && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">{selectedBooking.title}</h3>
+                    <p className="text-muted-foreground">Đơn vị: {selectedBooking.organizer}</p>
                   </div>
-                </ScrollArea>
-              </TabsContent>
-              
-              <TabsContent value="calendar">
-                <div className="flex items-center justify-between mb-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setCurrentWeekStart(addDays(currentWeekStart, -7))}
-                  >
-                    Tuần trước
-                  </Button>
-                  <div className="text-sm font-medium">
-                    {format(currentWeekStart, 'dd/MM/yyyy')} - {format(addDays(currentWeekStart, 6), 'dd/MM/yyyy')}
+                  
+                  <Separator />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium">Phòng</p>
+                      <p>{mockRooms.find(room => room.id === selectedBooking.roomId)?.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Số người tham dự</p>
+                      <p>{selectedBooking.participantsCount} người</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Thời gian bắt đầu</p>
+                      <p>{format(selectedBooking.start, 'HH:mm - dd/MM/yyyy', { locale: vi })}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Thời gian kết thúc</p>
+                      <p>{format(selectedBooking.end, 'HH:mm - dd/MM/yyyy', { locale: vi })}</p>
+                    </div>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setCurrentWeekStart(addDays(currentWeekStart, 7))}
-                  >
-                    Tuần sau
-                  </Button>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <p className="text-sm font-medium">Trạng thái</p>
+                    <div className={`mt-1 inline-block px-2 py-1 rounded-full text-xs ${
+                      selectedBooking.status === 'approved' 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    }`}>
+                      {selectedBooking.status === 'approved' ? 'Đã duyệt' : 'Chờ duyệt'}
+                    </div>
+                  </div>
                 </div>
-                
-                <ScrollArea className="h-[400px]">
-                  <div className="min-w-[800px]">
-                    {/* Calendar header */}
-                    <div className="grid grid-cols-8 gap-2 mb-2">
-                      <div className="bg-muted/50 p-2 rounded-md text-center font-medium">
-                        Phòng
-                      </div>
-                      {getDaysOfWeek().map((day, index) => (
-                        <div 
-                          key={index} 
-                          className={`bg-muted/50 p-2 rounded-md text-center ${
-                            isSameDay(day, new Date()) ? 'bg-primary/10' : ''
-                          }`}
-                        >
-                          <div className="font-medium">{format(day, 'EEEE', { locale: require('date-fns/locale/vi') })}</div>
-                          <div className="text-xs">{format(day, 'dd/MM')}</div>
-                        </div>
-                      ))}
-                    </div>
+              )}
+              <DialogFooter>
+                {selectedBooking && selectedBooking.status === 'pending' && (
+                  <div className="flex gap-2 mr-auto">
+                    <Button 
+                      variant="default" 
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        toast.success('Đã phê duyệt yêu cầu mượn phòng');
+                        setIsDetailsDialogOpen(false);
+                      }}
+                    >
+                      <Check className="mr-2 h-4 w-4" />
+                      Phê duyệt
+                    </Button>
                     
-                    {/* Calendar body */}
-                    <div className="space-y-2">
-                      {filteredRooms.map((room) => (
-                        <div key={room.id} className="grid grid-cols-8 gap-2">
-                          <div 
-                            className={`p-2 border rounded-md ${
-                              selectedRooms.some(r => r.id === room.id) ? 'border-primary bg-primary/5' : ''
-                            }`}
-                            onClick={() => toggleRoomSelection(room)}
-                          >
-                            <div className="font-medium text-sm">{room.name}</div>
-                            <div className="text-xs text-muted-foreground">{room.capacity} người</div>
-                          </div>
-                          
-                          {getDaysOfWeek().map((day, index) => (
-                            <div 
-                              key={index} 
-                              className={`p-2 border rounded-md ${
-                                isRoomAvailableOnDay(room, day) 
-                                  ? 'bg-green-50 dark:bg-green-950/20 hover:bg-green-100 dark:hover:bg-green-900/20 cursor-pointer' 
-                                  : 'bg-red-50 dark:bg-red-950/20 text-muted-foreground'
-                              }`}
-                              onClick={() => isRoomAvailableOnDay(room, day) && toggleRoomSelection(room)}
-                            >
-                              {isRoomAvailableOnDay(room, day) ? (
-                                <>
-                                  <div className="text-xs font-medium text-green-600 dark:text-green-400">Có thể đặt</div>
-                                  <div className="text-[10px] truncate">Có slot trống</div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="text-xs font-medium text-red-600 dark:text-red-400">Đã đặt</div>
-                                  <div className="text-[10px] truncate">Không có slot trống</div>
-                                </>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
+                    <Button 
+                      variant="destructive"
+                      onClick={() => {
+                        toast.error('Đã từ chối yêu cầu mượn phòng');
+                        setIsDetailsDialogOpen(false);
+                      }}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Từ chối
+                    </Button>
                   </div>
-                </ScrollArea>
-              </TabsContent>
-            </Tabs>
-          </div>
-          
-          <DialogFooter>
-            <div className="w-full flex justify-between items-center">
-              <span className="text-sm">Đã chọn {selectedRooms.length} phòng</span>
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setRoomsDialogOpen(false)}>
-                  Hủy
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDetailsDialogOpen(false)}
+                >
+                  Đóng
                 </Button>
-                <Button onClick={() => setRoomsDialogOpen(false)}>
-                  Xác nhận chọn phòng
-                </Button>
-              </div>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </Tabs>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Lịch sử dụng phòng trong tuần</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RoomCalendar
+              rooms={mockRooms}
+              bookings={calendarBookings}
+              date={date}
+              onDateChange={setDate}
+              mode="view"
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
   );
 };
 

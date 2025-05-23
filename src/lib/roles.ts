@@ -1,3 +1,4 @@
+
 // Define all available system roles
 export type UserRole = 
   | 'ADMIN_HE_THONG' 
@@ -79,11 +80,11 @@ export const rolePermissions: Record<UserRole, Permission> = {
     canApprove: [],
   },
   BI_THU_DOAN: {
-    canView: ['SuKien.DaDuyet', 'YeuCauMuonPhong.DaDuyet', 'YcMuonPhongChiTiet.DaDuyet', 'ChiTietDatPhong', 'YeuCauDoiPhong', 'ThanhVienDoan', 'ThongKeDoan'],
-    canCreate: ['SK_MoiThamGia'],
-    canEdit: ['SK_MoiThamGia', 'ThanhVienDoan'],
+    canView: ['SuKien.DaDuyet', 'YeuCauMuonPhong.DaDuyet', 'YcMuonPhongChiTiet.DaDuyet', 'ChiTietDatPhong', 'YeuCauDoiPhong', 'ThanhVienDoan', 'ThongKeDoan', 'ThongTinSinhVien'],
+    canCreate: ['SK_MoiThamGia', 'SuKien_Doan', 'YeuCauMuonPhong_Doan'],
+    canEdit: ['SK_MoiThamGia', 'ThanhVienDoan', 'SuKien_Doan'],
     canDelete: [],
-    canApprove: [],
+    canApprove: ['SuKien_Doan.CapDuoi'],
   },
   SINH_VIEN: {
     canView: ['SuKien.DaDuyet', 'TaiLieuSK.CongKhai'],
@@ -176,4 +177,21 @@ export const canViewEvent = (role: UserRole, eventStatus: string, isPublic: bool
   
   // Others can only see approved and public events
   return eventStatus === 'approved' && isPublic;
+};
+
+// Get role display name
+export const getRoleDisplayName = (role: UserRole): string => {
+  const roleDisplayMap: Record<UserRole, string> = {
+    ADMIN_HE_THONG: 'Admin hệ thống',
+    CB_TO_CHUC_SU_KIEN: 'Cán bộ tổ chức sự kiện',
+    BGH_DUYET_SK_TRUONG: 'Ban giám hiệu duyệt sự kiện',
+    QUAN_LY_CSVC: 'Quản lý cơ sở vật chất',
+    TRUONG_KHOA: 'Trưởng khoa',
+    TRUONG_CLB: 'Chủ nhiệm câu lạc bộ',
+    BI_THU_DOAN: 'Bí thư đoàn',
+    SINH_VIEN: 'Sinh viên',
+    GIANG_VIEN: 'Giảng viên'
+  };
+  
+  return roleDisplayMap[role] || role;
 };

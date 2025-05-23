@@ -44,6 +44,14 @@ import Students from "./pages/Users/Students";
 import Lecturers from "./pages/Users/Lecturers";
 import Roles from "./pages/Users/Roles";
 
+// Import Unit Management Pages
+import Units from "./pages/Units/Units";
+import Departments from "./pages/Units/Departments";
+import Clubs from "./pages/Units/Clubs";
+import Union from "./pages/Units/Union";
+import Majors from "./pages/Units/Majors";
+import Classes from "./pages/Units/Classes";
+
 // Import Protected Route Component
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -106,6 +114,14 @@ const App = () => (
                   <Route path="/users/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
                   <Route path="/users/lecturers" element={<ProtectedRoute><Lecturers /></ProtectedRoute>} />
                   <Route path="/users/roles" element={<ProtectedRoute><Roles /></ProtectedRoute>} />
+                  
+                  {/* Units Management Routes */}
+                  <Route path="/units" element={<ProtectedRoute><Units /></ProtectedRoute>} />
+                  <Route path="/units/departments" element={<ProtectedRoute><Departments /></ProtectedRoute>} />
+                  <Route path="/units/clubs" element={<ProtectedRoute><Clubs /></ProtectedRoute>} />
+                  <Route path="/units/union" element={<ProtectedRoute><Union /></ProtectedRoute>} />
+                  <Route path="/units/majors" element={<ProtectedRoute><Majors /></ProtectedRoute>} />
+                  <Route path="/units/classes" element={<ProtectedRoute><Classes /></ProtectedRoute>} />
                   
                   {/* Catch-all Route */}
                   <Route path="*" element={<NotFound />} />

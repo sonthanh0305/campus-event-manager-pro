@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
@@ -352,6 +353,102 @@ function getPayloadConfigFromPayload(
     ? config[configLabelKey]
     : config[key as keyof typeof config]
 }
+
+// Define LineChart component for FacilitiesDashboard
+export const LineChart: React.FC<{
+  data: any[];
+  index: string;
+  categories: string[];
+  colors: string[];
+  valueFormatter?: (value: number) => string;
+  className?: string;
+}> = ({
+  data,
+  index,
+  categories,
+  colors,
+  valueFormatter = (value) => `${value}`,
+  className,
+}) => {
+  // Create config for the chart colors
+  const chartConfig: ChartConfig = React.useMemo(() => {
+    return categories.reduce((acc, category, i) => {
+      acc[category] = {
+        label: category,
+        color: colors[i] || "#888",
+      };
+      return acc;
+    }, {} as ChartConfig);
+  }, [categories, colors]);
+
+  return (
+    <ChartContainer className={className} config={chartConfig}>
+      <RechartsPrimitive.LineChart data={data}>
+        <RechartsPrimitive.CartesianGrid strokeDasharray="3 3" />
+        <RechartsPrimitive.XAxis dataKey={index} />
+        <RechartsPrimitive.YAxis />
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
+        {categories.map((category, i) => (
+          <RechartsPrimitive.Line
+            key={category}
+            type="monotone"
+            dataKey={category}
+            stroke={colors[i] || "#888"}
+            activeDot={{ r: 8 }}
+          />
+        ))}
+      </RechartsPrimitive.LineChart>
+    </ChartContainer>
+  );
+};
+
+// Define BarChart component for FacilitiesDashboard
+export const BarChart: React.FC<{
+  data: any[];
+  index: string;
+  categories: string[];
+  colors: string[];
+  valueFormatter?: (value: number) => string;
+  className?: string;
+}> = ({
+  data,
+  index,
+  categories,
+  colors,
+  valueFormatter = (value) => `${value}`,
+  className,
+}) => {
+  // Create config for the chart colors
+  const chartConfig: ChartConfig = React.useMemo(() => {
+    return categories.reduce((acc, category, i) => {
+      acc[category] = {
+        label: category,
+        color: colors[i] || "#888",
+      };
+      return acc;
+    }, {} as ChartConfig);
+  }, [categories, colors]);
+
+  return (
+    <ChartContainer className={className} config={chartConfig}>
+      <RechartsPrimitive.BarChart data={data}>
+        <RechartsPrimitive.CartesianGrid strokeDasharray="3 3" />
+        <RechartsPrimitive.XAxis dataKey={index} />
+        <RechartsPrimitive.YAxis />
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
+        {categories.map((category, i) => (
+          <RechartsPrimitive.Bar
+            key={category}
+            dataKey={category}
+            fill={colors[i] || "#888"}
+          />
+        ))}
+      </RechartsPrimitive.BarChart>
+    </ChartContainer>
+  );
+};
 
 export {
   ChartContainer,

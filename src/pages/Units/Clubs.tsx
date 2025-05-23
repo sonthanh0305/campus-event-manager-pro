@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { Users, PlusCircle, Search, Edit, Trash2, User, Calendar } from 'lucide-react';
@@ -171,7 +170,7 @@ export default function Clubs() {
                         <TableCell>{club.parentName || '-'}</TableCell>
                         <TableCell>{club.memberCount}</TableCell>
                         <TableCell>
-                          <Badge variant={club.active ? "success" : "secondary"} className={club.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                          <Badge variant="secondary" className={club.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
                             {club.active ? "Hoạt động" : "Tạm ngưng"}
                           </Badge>
                         </TableCell>

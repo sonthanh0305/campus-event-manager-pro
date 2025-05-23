@@ -48,6 +48,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/sonner';
 import { motion } from 'framer-motion';
+import { useRole } from '@/context/RoleContext';
 
 // Mock data for rooms
 const mockRooms = [
@@ -219,6 +220,8 @@ const getStatusBadge = (status: string) => {
 };
 
 const RoomChangeRequests = () => {
+  const { isEventOrganizer, isFacilityManager } = useRole();
+  
   const [date, setDate] = useState<Date>(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -259,6 +262,8 @@ const RoomChangeRequests = () => {
   
   // Handle time slot selection
   const handleTimeSlotClick = (roomId: string, timeSlot: TimeSlot) => {
+    if (!isFacilityManager()) return; // Only facility managers can select time slots
+    
     const existingIndex = selectedTimeSlots.findIndex(slot => slot.id === timeSlot.id);
     
     if (existingIndex >= 0) {
@@ -270,8 +275,13 @@ const RoomChangeRequests = () => {
     }
   };
   
-  // Handle approve request
+  // Handle approve request - Only for facility managers
   const handleApprove = () => {
+    if (!isFacilityManager()) {
+      toast.error('Bạn không có quyền thực hiện thao tác này');
+      return;
+    }
+    
     if (!selectedRoom) {
       toast.error('Vui lòng chọn phòng thay thế');
       return;
@@ -282,8 +292,13 @@ const RoomChangeRequests = () => {
     setSelectedTimeSlots([]);
   };
   
-  // Handle reject request
+  // Handle reject request - Only for facility managers
   const handleReject = () => {
+    if (!isFacilityManager()) {
+      toast.error('Bạn không có quyền thực hiện thao tác này');
+      return;
+    }
+    
     if (!reasonText.trim()) {
       toast.error('Vui lòng nhập lý do từ chối');
       return;
@@ -293,10 +308,15 @@ const RoomChangeRequests = () => {
     setReasonText('');
   };
   
-  // Handle submit new change request
+  // Handle submit new change request - Only for event organizers
   const handleSubmitChangeRequest = () => {
-    if (!eventTitle || !currentRoom || !preferredRoomType || !selectedRoom || !changeReason || selectedTimeSlots.length === 0) {
-      toast.error('Vui lòng điền đầy đủ thông tin và chọn ít nhất một khung giờ');
+    if (!isEventOrganizer()) {
+      toast.error('Bạn không có quyền thực hiện thao tác này');
+      return;
+    }
+    
+    if (!eventTitle || !currentRoom || !preferredRoomType || !changeReason) {
+      toast.error('Vui lòng điền đầy đủ thông tin yêu cầu');
       return;
     }
     
@@ -335,129 +355,92 @@ const RoomChangeRequests = () => {
             <p className="text-muted-foreground">Quản lý các yêu cầu đổi phòng cho các sự kiện</p>
           </div>
           
-          <Dialog open={openNewRequestDialog} onOpenChange={setOpenNewRequestDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Calendar className="mr-2 h-4 w-4" /> 
-                Tạo yêu cầu mới
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl">
-              <DialogHeader>
-                <DialogTitle>Tạo yêu cầu đổi phòng mới</DialogTitle>
-                <DialogDescription>
-                  Điền thông tin và chọn khung giờ để yêu cầu đổi phòng cho sự kiện của bạn
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Tên sự kiện</label>
-                    <Input 
-                      placeholder="Nhập tên sự kiện" 
-                      value={eventTitle} 
-                      onChange={(e) => setEventTitle(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Số người tham dự</label>
-                    <Input 
-                      type="number" 
-                      placeholder="Nhập số người tham dự" 
-                      value={participantsCount} 
-                      onChange={(e) => setParticipantsCount(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Phòng hiện tại</label>
-                    <Select value={currentRoom} onValueChange={setCurrentRoom}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn phòng hiện tại" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mockRooms.map(room => (
-                          <SelectItem key={room.id} value={room.id}>
-                            {room.name} (Sức chứa: {room.capacity})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Loại phòng mong muốn</label>
-                    <Select value={preferredRoomType} onValueChange={setPreferredRoomType}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn loại phòng mong muốn" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="classroom">Phòng học</SelectItem>
-                        <SelectItem value="conference">Phòng hội nghị</SelectItem>
-                        <SelectItem value="lab">Phòng thực hành</SelectItem>
-                        <SelectItem value="auditorium">Hội trường</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Phòng thay thế mong muốn</label>
-                    <Select value={selectedRoom} onValueChange={setSelectedRoom}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn phòng mong muốn (nếu có)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mockRooms.map(room => (
-                          <SelectItem key={room.id} value={room.id}>
-                            {room.name} (Sức chứa: {room.capacity})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Lý do đổi phòng</label>
-                  <Textarea 
-                    placeholder="Mô tả lý do cần đổi phòng" 
-                    value={changeReason} 
-                    onChange={(e) => setChangeReason(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="flex justify-between">
-                    <span className="text-sm font-medium">Chọn khung giờ</span>
-                    <span className="text-xs text-muted-foreground">Đã chọn {selectedTimeSlots.length} khung giờ</span>
-                  </label>
-                  {selectedRoom ? (
-                    <div className="border rounded-md">
-                      <RoomCalendar
-                        rooms={mockRooms.filter(room => room.id === selectedRoom)}
-                        bookings={calendarBookings}
-                        date={date}
-                        onDateChange={setDate}
-                        onTimeSlotClick={handleTimeSlotClick}
-                        selectedSlots={selectedTimeSlots}
-                        mode="select"
+          {isEventOrganizer() && (
+            <Dialog open={openNewRequestDialog} onOpenChange={setOpenNewRequestDialog}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Calendar className="mr-2 h-4 w-4" /> 
+                  Tạo yêu cầu mới
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Tạo yêu cầu đổi phòng mới</DialogTitle>
+                  <DialogDescription>
+                    Điền thông tin yêu cầu đổi phòng cho sự kiện của bạn
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Tên sự kiện</label>
+                      <Input 
+                        placeholder="Nhập tên sự kiện" 
+                        value={eventTitle} 
+                        onChange={(e) => setEventTitle(e.target.value)}
                       />
                     </div>
-                  ) : (
-                    <div className="border rounded-md p-4 text-center text-muted-foreground">
-                      Vui lòng chọn phòng mong muốn trước
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Số người tham dự</label>
+                      <Input 
+                        type="number" 
+                        placeholder="Nhập số người tham dự" 
+                        value={participantsCount} 
+                        onChange={(e) => setParticipantsCount(e.target.value)}
+                      />
                     </div>
-                  )}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phòng hiện tại</label>
+                      <Select value={currentRoom} onValueChange={setCurrentRoom}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Chọn phòng hiện tại" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {mockRooms.map(room => (
+                            <SelectItem key={room.id} value={room.id}>
+                              {room.name} (Sức chứa: {room.capacity})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Loại phòng mong muốn</label>
+                      <Select value={preferredRoomType} onValueChange={setPreferredRoomType}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Chọn loại phòng mong muốn" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="classroom">Phòng học</SelectItem>
+                          <SelectItem value="conference">Phòng hội nghị</SelectItem>
+                          <SelectItem value="lab">Phòng thực hành</SelectItem>
+                          <SelectItem value="auditorium">Hội trường</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Lý do đổi phòng</label>
+                    <Textarea 
+                      placeholder="Mô tả lý do cần đổi phòng" 
+                      value={changeReason} 
+                      onChange={(e) => setChangeReason(e.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => {
-                  setOpenNewRequestDialog(false);
-                  resetForm();
-                }}>
-                  Hủy
-                </Button>
-                <Button onClick={handleSubmitChangeRequest}>Gửi yêu cầu</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => {
+                    setOpenNewRequestDialog(false);
+                    resetForm();
+                  }}>
+                    Hủy
+                  </Button>
+                  <Button onClick={handleSubmitChangeRequest}>Gửi yêu cầu</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <Tabs defaultValue="pending" className="space-y-4">
@@ -469,6 +452,7 @@ const RoomChangeRequests = () => {
             </TabsList>
           </div>
           
+          {/* Pending Requests Tab */}
           <TabsContent value="pending" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
@@ -525,31 +509,35 @@ const RoomChangeRequests = () => {
                                     Chi tiết
                                   </Button>
                                   
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="text-green-600 border-green-600"
-                                    onClick={() => {
-                                      setSelectedRequest(request.id);
-                                      setOpenApproveDialog(true);
-                                    }}
-                                  >
-                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                    Duyệt
-                                  </Button>
-                                  
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="text-red-600 border-red-600"
-                                    onClick={() => {
-                                      setSelectedRequest(request.id);
-                                      setOpenRejectDialog(true);
-                                    }}
-                                  >
-                                    <XCircle className="h-4 w-4 mr-1" />
-                                    Từ chối
-                                  </Button>
+                                  {isFacilityManager() && (
+                                    <>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-green-600 border-green-600"
+                                        onClick={() => {
+                                          setSelectedRequest(request.id);
+                                          setOpenApproveDialog(true);
+                                        }}
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Duyệt
+                                      </Button>
+                                      
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-red-600 border-red-600"
+                                        onClick={() => {
+                                          setSelectedRequest(request.id);
+                                          setOpenRejectDialog(true);
+                                        }}
+                                      >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Từ chối
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -568,6 +556,7 @@ const RoomChangeRequests = () => {
             </Card>
           </TabsContent>
           
+          {/* All Requests Tab */}
           <TabsContent value="all" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
@@ -662,6 +651,7 @@ const RoomChangeRequests = () => {
             </Card>
           </TabsContent>
           
+          {/* History Tab */}
           <TabsContent value="history" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
@@ -816,6 +806,30 @@ const RoomChangeRequests = () => {
               )}
             </div>
             <DialogFooter>
+              {isFacilityManager() && getSelectedRequest()?.status === 'pending' && (
+                <div className="flex gap-2 mr-auto">
+                  <Button 
+                    variant="default" 
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      setOpenDetailsDialog(false);
+                      setOpenApproveDialog(true);
+                    }}
+                  >
+                    Phân phòng
+                  </Button>
+                  
+                  <Button 
+                    variant="destructive"
+                    onClick={() => {
+                      setOpenDetailsDialog(false);
+                      setOpenRejectDialog(true);
+                    }}
+                  >
+                    Từ chối
+                  </Button>
+                </div>
+              )}
               <Button variant="outline" onClick={() => {
                 setOpenDetailsDialog(false);
                 setSelectedRequest(null);
@@ -824,113 +838,119 @@ const RoomChangeRequests = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Approve Dialog */}
-        <Dialog open={openApproveDialog} onOpenChange={setOpenApproveDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Duyệt yêu cầu đổi phòng</DialogTitle>
-              <DialogDescription>
-                Chọn phòng thay thế cho sự kiện "{getSelectedRequest()?.eventTitle}"
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="text-sm font-medium">Phòng hiện tại:</span>
-                <span className="col-span-3">
-                  {getSelectedRequest()?.currentRoom.name} ({getRoomTypeDisplay(getSelectedRequest()?.currentRoom.type || '')}, sức chứa {getSelectedRequest()?.currentRoom.capacity} người)
-                </span>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="text-sm font-medium">Loại phòng mong muốn:</span>
-                <span className="col-span-3">{getRoomTypeDisplay(getSelectedRequest()?.preferredRoomType || '')}</span>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="text-sm font-medium">Chọn phòng mới:</span>
-                <div className="col-span-3">
-                  <Select value={selectedRoom} onValueChange={setSelectedRoom}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn phòng thay thế" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockRooms.map(room => (
-                        <SelectItem key={room.id} value={room.id}>
-                          {room.name} ({getRoomTypeDisplay(room.type)}, sức chứa {room.capacity} người)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+        {/* Approve Dialog - Only for Facility Managers */}
+        {isFacilityManager() && (
+          <Dialog open={openApproveDialog} onOpenChange={setOpenApproveDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Duyệt yêu cầu đổi phòng</DialogTitle>
+                <DialogDescription>
+                  Chọn phòng thay thế cho sự kiện "{getSelectedRequest()?.eventTitle}"
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <span className="text-sm font-medium">Phòng hiện tại:</span>
+                  <span className="col-span-3">
+                    {getSelectedRequest()?.currentRoom.name} ({getRoomTypeDisplay(getSelectedRequest()?.currentRoom.type || '')}, sức chứa {getSelectedRequest()?.currentRoom.capacity} người)
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <span className="text-sm font-medium">Loại phòng mong muốn:</span>
+                  <span className="col-span-3">{getRoomTypeDisplay(getSelectedRequest()?.preferredRoomType || '')}</span>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <span className="text-sm font-medium">Chọn phòng mới:</span>
+                  <div className="col-span-3">
+                    <Select value={selectedRoom} onValueChange={setSelectedRoom}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn phòng thay thế" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockRooms.map(room => (
+                          <SelectItem key={room.id} value={room.id}>
+                            {room.name} ({getRoomTypeDisplay(room.type)}, sức chứa {room.capacity} người)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="flex justify-between">
+                    <span className="text-sm font-medium">Xem lịch phòng</span>
+                  </label>
+                  {selectedRoom ? (
+                    <div className="border rounded-md">
+                      <RoomCalendar
+                        rooms={mockRooms.filter(room => room.id === selectedRoom)}
+                        bookings={calendarBookings}
+                        date={date}
+                        onDateChange={setDate}
+                        onTimeSlotClick={handleTimeSlotClick}
+                        selectedSlots={selectedTimeSlots}
+                        mode="select"
+                      />
+                    </div>
+                  ) : (
+                    <div className="border rounded-md p-4 text-center text-muted-foreground">
+                      Vui lòng chọn phòng thay thế
+                    </div>
+                  )}
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                <label className="flex justify-between">
-                  <span className="text-sm font-medium">Xem lịch phòng</span>
-                </label>
-                {selectedRoom ? (
-                  <div className="border rounded-md">
-                    <RoomCalendar
-                      rooms={mockRooms.filter(room => room.id === selectedRoom)}
-                      bookings={calendarBookings}
-                      date={date}
-                      onDateChange={setDate}
-                      mode="view"
-                    />
-                  </div>
-                ) : (
-                  <div className="border rounded-md p-4 text-center text-muted-foreground">
-                    Vui lòng chọn phòng thay thế
-                  </div>
-                )}
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setSelectedRequest(null);
-                  setOpenApproveDialog(false);
-                  setSelectedRoom('');
-                }}
-              >
-                Hủy
-              </Button>
-              <Button onClick={handleApprove}>Xác nhận duyệt</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSelectedRequest(null);
+                    setOpenApproveDialog(false);
+                    setSelectedRoom('');
+                  }}
+                >
+                  Hủy
+                </Button>
+                <Button onClick={handleApprove}>Xác nhận duyệt</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
 
-        {/* Reject Dialog */}
-        <Dialog open={openRejectDialog} onOpenChange={setOpenRejectDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Từ chối yêu cầu đổi phòng</DialogTitle>
-              <DialogDescription>
-                Vui lòng cung cấp lý do từ chối yêu cầu này
-              </DialogDescription>
-            </DialogHeader>
-            <Textarea
-              placeholder="Nhập lý do từ chối..."
-              value={reasonText}
-              onChange={(e) => setReasonText(e.target.value)}
-              className="min-h-[100px]"
-            />
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setSelectedRequest(null);
-                  setOpenRejectDialog(false);
-                  setReasonText('');
-                }}
-              >
-                Hủy
-              </Button>
-              <Button variant="destructive" onClick={handleReject}>
-                Xác nhận từ chối
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Reject Dialog - Only for Facility Managers */}
+        {isFacilityManager() && (
+          <Dialog open={openRejectDialog} onOpenChange={setOpenRejectDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Từ chối yêu cầu đổi phòng</DialogTitle>
+                <DialogDescription>
+                  Vui lòng cung cấp lý do từ chối yêu cầu này
+                </DialogDescription>
+              </DialogHeader>
+              <Textarea
+                placeholder="Nhập lý do từ chối..."
+                value={reasonText}
+                onChange={(e) => setReasonText(e.target.value)}
+                className="min-h-[100px]"
+              />
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSelectedRequest(null);
+                    setOpenRejectDialog(false);
+                    setReasonText('');
+                  }}
+                >
+                  Hủy
+                </Button>
+                <Button variant="destructive" onClick={handleReject}>
+                  Xác nhận từ chối
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </DashboardLayout>
   );

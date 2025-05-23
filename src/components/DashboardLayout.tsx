@@ -1,4 +1,3 @@
-
 import React, { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -18,8 +17,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import ThemeSwitcher from './ThemeSwitcher';
-import NotificationBell from './NotificationBell';
+import { ThemeSwitcher } from './ThemeSwitcher';
+import { NotificationBell } from './NotificationBell';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/use-mobile';
